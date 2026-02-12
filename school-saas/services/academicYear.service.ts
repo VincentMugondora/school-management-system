@@ -76,14 +76,17 @@ export const AcademicYearService = {
     // Validate dates
     validateDateRange(data.startDate, data.endDate);
 
-    // If setting as current, unset any existing current academic year
+    // If setting as current, use transaction to ensure only one current per school
     if (data.isCurrent) {
-      await prisma.academicYear.updateMany({
-        where: {
-          schoolId: context.schoolId,
-          isCurrent: true,
-        },
-        data: { isCurrent: false },
+      await prisma.$transaction(async (tx) => {
+        // Unset any existing current academic year
+        await tx.academicYear.updateMany({
+          where: {
+            schoolId: context.schoolId,
+            isCurrent: true,
+          },
+          data: { isCurrent: false },
+        });
       });
     }
 
@@ -250,18 +253,46 @@ export const AcademicYearService = {
       validateDateRange(data.startDate, data.endDate);
     }
 
-    // If setting as current, unset any existing current academic year
+    // If setting as current, use transaction for atomic update
     if (data.isCurrent) {
-      await prisma.academicYear.updateMany({
-        where: {
-          schoolId: context.schoolId,
-          isCurrent: true,
-          id: { not: id },
-        },
-        data: { isCurrent: false },
+      return await prisma.$transaction(async (tx) => {
+        // Unset any existing current academic year
+        await tx.academicYear.updateMany({
+          where: {
+            schoolId: context.schoolId,
+            isCurrent: true,
+            id: { not: id },
+          },
+          data: { isCurrent: false },
+        });
+
+        // Update this academic year
+        const updateData: Prisma.AcademicYearUpdateInput = {};
+
+        if (data.name !== undefined) {
+          updateData.name = data.name.trim();
+        }
+        if (data.startDate !== undefined) {
+          updateData.startDate = data.startDate;
+        }
+        if (data.endDate !== undefined) {
+          updateData.endDate = data.endDate;
+        }
+        updateData.isCurrent = true;
+        if (data.status !== undefined) {
+          updateData.status = data.status;
+        }
+
+        const updatedYear = await tx.academicYear.update({
+          where: { id },
+          data: updateData,
+        });
+
+        return updatedYear;
       });
     }
 
+    // Non-current update (no transaction needed)
     const updateData: Prisma.AcademicYearUpdateInput = {};
 
     if (data.name !== undefined) {
@@ -313,22 +344,25 @@ export const AcademicYearService = {
       throw new NotFoundError('AcademicYear', id);
     }
 
-    // Unset any existing current academic year
-    await prisma.academicYear.updateMany({
-      where: {
-        schoolId: context.schoolId,
-        isCurrent: true,
-      },
-      data: { isCurrent: false },
-    });
+    // Use transaction to ensure atomic update of current academic year
+    return await prisma.$transaction(async (tx) => {
+      // Unset any existing current academic year
+      await tx.academicYear.updateMany({
+        where: {
+          schoolId: context.schoolId,
+          isCurrent: true,
+        },
+        data: { isCurrent: false },
+      });
 
-    // Set this one as current
-    const updatedYear = await prisma.academicYear.update({
-      where: { id },
-      data: { isCurrent: true },
-    });
+      // Set this one as current
+      const updatedYear = await tx.academicYear.update({
+        where: { id },
+        data: { isCurrent: true },
+      });
 
-    return updatedYear;
+      return updatedYear;
+    });
   },
 
   /**

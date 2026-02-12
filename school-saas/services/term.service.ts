@@ -58,6 +58,7 @@ export const TermService = {
       name: string;
       startDate: Date;
       endDate: Date;
+      isLocked?: boolean;
     },
     context: ServiceContext
   ): Promise<Term> {
@@ -89,6 +90,7 @@ export const TermService = {
         endDate: data.endDate,
         schoolId: context.schoolId,
         academicYearId: data.academicYearId,
+        isLocked: data.isLocked ?? false,
         status: TermStatus.ACTIVE,
       },
     });
@@ -248,6 +250,7 @@ export const TermService = {
       startDate?: Date;
       endDate?: Date;
       status?: TermStatus;
+      isLocked?: boolean;
     },
     context: ServiceContext
   ): Promise<Term> {
@@ -269,14 +272,14 @@ export const TermService = {
       throw new NotFoundError('Term', id);
     }
 
+    // Business Rule: Cannot modify term if it is locked
+    if (existingTerm.isLocked) {
+      throw new ValidationError('Cannot modify a locked term. Unlock it first.');
+    }
+
     // Validate dates if both provided
     if (data.startDate && data.endDate) {
       validateDateRange(data.startDate, data.endDate);
-    }
-
-    // If unlocking, verify no conflicting locked terms
-    if (data.status === TermStatus.ACTIVE && existingTerm.status === TermStatus.LOCKED) {
-      // Additional validation for unlocking
     }
 
     const updateData: Prisma.TermUpdateInput = {};
@@ -292,6 +295,9 @@ export const TermService = {
     }
     if (data.status !== undefined) {
       updateData.status = data.status;
+    }
+    if (data.isLocked !== undefined) {
+      updateData.isLocked = data.isLocked;
     }
 
     const updatedTerm = await prisma.term.update({
@@ -328,7 +334,7 @@ export const TermService = {
 
     const lockedTerm = await prisma.term.update({
       where: { id },
-      data: { status: TermStatus.LOCKED },
+      data: { isLocked: true },
     });
 
     return lockedTerm;
@@ -360,7 +366,7 @@ export const TermService = {
 
     const unlockedTerm = await prisma.term.update({
       where: { id },
-      data: { status: TermStatus.ACTIVE },
+      data: { isLocked: false },
     });
 
     return unlockedTerm;
@@ -397,6 +403,11 @@ export const TermService = {
 
     if (!existingTerm) {
       throw new NotFoundError('Term', id);
+    }
+
+    // Business Rule: Cannot delete locked term
+    if (existingTerm.isLocked) {
+      throw new ValidationError('Cannot delete a locked term. Unlock it first.');
     }
 
     // Check for associated records
