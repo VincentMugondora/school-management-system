@@ -1,0 +1,561 @@
+Excellent. Below is a **clean, production-grade system design** for a multi-tenant School Management SaaS built with:
+
+* **Next.js (App Router)**
+* **Clerk (Authentication)**
+* **PostgreSQL (Supabase/Neon)**
+* **Prisma ORM**
+* **Vercel (Hosting)**
+
+Designed specifically for **Zimbabwean schools**, but architected to scale.
+
+---
+
+# 1. System Overview
+
+## 1.1 High-Level Architecture
+
+```
+Client (Browser)
+     ↓
+Next.js App (Vercel)
+     ↓
+Server Actions / API Routes
+     ↓
+Service Layer (Business Logic)
+     ↓
+Prisma ORM
+     ↓
+PostgreSQL (Shared DB)
+```
+
+External services:
+
+* Clerk → Identity
+* Cloudinary / Supabase Storage → File uploads
+* Email provider → Notifications
+
+---
+
+# 2. Multi-Tenant Architecture
+
+## 2.1 Tenancy Model
+
+**Model:** Shared Database + Logical Isolation
+**Isolation Key:** `schoolId`
+
+Every school-specific table includes:
+
+```
+schoolId UUID NOT NULL
+```
+
+Isolation enforced at:
+
+* Query level
+* Service layer
+* Role authorization layer
+
+---
+
+## 2.2 Data Isolation Strategy
+
+### Rule 1:
+
+All queries must include:
+
+```ts
+where: { schoolId: currentUser.schoolId }
+```
+
+### Rule 2:
+
+`schoolId` is NEVER accepted from client input.
+
+### Rule 3:
+
+User → School relationship is authoritative.
+
+---
+
+# 3. Core Domains (System Modules)
+
+The system is divided into clear bounded contexts.
+
+---
+
+# 3.1 Identity & Access Domain
+
+## Responsibilities:
+
+* Authentication (Clerk)
+* Role-based authorization
+* Tenant isolation
+
+## Flow:
+
+1. User logs in via Clerk
+2. Clerk returns `clerkId`
+3. System loads internal `User` record
+4. Extract:
+
+   * `schoolId`
+   * `role`
+5. Attach to request context
+
+---
+
+## Role Model
+
+```
+SUPER_ADMIN  (platform owner)
+ADMIN        (school admin)
+TEACHER
+STUDENT
+PARENT
+ACCOUNTANT
+```
+
+---
+
+# 3.2 School Domain
+
+Represents an institution.
+
+## School Entity
+
+Fields:
+
+* id
+* name
+* slug
+* contact info
+* createdAt
+* status (ACTIVE / SUSPENDED)
+
+### Slug used for routing:
+
+```
+yourapp.com/s/{slug}
+```
+
+---
+
+# 3.3 Academic Structure Domain
+
+This is the backbone of Zimbabwe school logic.
+
+## AcademicYear
+
+* Unique per school
+* Only one `isCurrent = true`
+
+## Term
+
+* Linked to AcademicYear
+* Zimbabwe default: Term 1, 2, 3
+* Can be locked after results finalized
+
+---
+
+# 3.4 Student Lifecycle Domain
+
+## Student
+
+Identity record.
+
+Does NOT directly hold class.
+
+## Enrollment (Critical Design Decision)
+
+Student → Enrollment → Class → AcademicYear
+
+Why?
+
+Because:
+
+* Students change class yearly
+* Historical data must be preserved
+* Promotion must not overwrite history
+
+---
+
+## Promotion Flow (Transaction-Based)
+
+When promoting:
+
+1. Lock current term
+2. Close academic year
+3. Create next academic year
+4. Bulk create new enrollments
+5. Mark old enrollments COMPLETE
+
+Wrapped inside DB transaction.
+
+---
+
+# 3.5 Staff Domain
+
+## Teacher
+
+* Linked to User
+* Assigned to Classes
+* Assigned to Subjects
+
+## Class
+
+* Grade (Form 1–6 etc)
+* Stream (A, B, C)
+* Linked to academic year
+
+---
+
+# 3.6 Academic Operations Domain
+
+## Subjects
+
+Scoped per school.
+
+## Exams
+
+Scoped per:
+
+* Term
+* Class
+* Subject
+
+## Results
+
+Linked to:
+
+* Enrollment
+* Exam
+
+Composite unique:
+
+```
+(enrollmentId, examId)
+```
+
+---
+
+# 3.7 Attendance Domain
+
+Attendance stored per:
+
+* Enrollment
+* Date
+* Term
+
+Design supports:
+
+* Daily attendance
+* Term reports
+
+---
+
+# 3.8 Finance Domain (Basic V1)
+
+## FeeStructure
+
+Per class per academic year.
+
+## Invoice
+
+Per student per term.
+
+## Payment
+
+Linked to invoice.
+
+Supports:
+
+* Partial payments
+* Balance tracking
+
+---
+
+# 3.9 Reporting Domain
+
+Supports:
+
+* Report cards (PDF generation)
+* Class performance analytics
+* Student ranking
+* Fee statements
+
+Heavy queries should use:
+
+* Indexed fields
+* Aggregation queries
+* Possibly materialized views later
+
+---
+
+# 4. Authorization Architecture
+
+You must implement 3 enforcement layers.
+
+---
+
+## Layer 1: Authentication
+
+Handled by Clerk.
+
+---
+
+## Layer 2: Tenant Isolation
+
+Middleware:
+
+```ts
+const user = await getCurrentUser();
+
+if (!user) throw new Error("Unauthenticated");
+
+requestContext.schoolId = user.schoolId;
+```
+
+---
+
+## Layer 3: Role-Based Authorization
+
+Centralized permission utility:
+
+```ts
+function requireRole(user, allowedRoles) {
+  if (!allowedRoles.includes(user.role)) {
+    throw new Error("Forbidden");
+  }
+}
+```
+
+Never check roles inside UI only.
+
+---
+
+# 5. Application Layer Design (Clean Structure)
+
+Recommended structure:
+
+```
+/app
+   /s/[slug]
+      /dashboard
+      /students
+      /teachers
+      /academics
+      /finance
+
+/lib
+   /auth
+   /db
+   /permissions
+   /services
+
+/services
+   student.service.ts
+   enrollment.service.ts
+   academicYear.service.ts
+   finance.service.ts
+
+/prisma
+   schema.prisma
+```
+
+---
+
+# 6. Service Layer Pattern (Very Important)
+
+Never put business logic in route handlers.
+
+Example:
+
+```
+StudentService.createStudent()
+EnrollmentService.promoteStudents()
+FinanceService.recordPayment()
+```
+
+Routes call services.
+Services call Prisma.
+
+---
+
+# 7. Database Design Principles
+
+## Indexing
+
+Index:
+
+* schoolId
+* academicYearId
+* classId
+* studentId
+
+Example:
+
+```prisma
+@@index([schoolId])
+@@index([schoolId, academicYearId])
+```
+
+---
+
+## Constraints
+
+* Unique student per academic year
+* Unique subject per class
+* One current academic year per school
+
+---
+
+## Soft Deletes
+
+Use:
+
+```
+deletedAt DateTime?
+```
+
+Instead of deleting students.
+
+---
+
+# 8. Deployment Architecture
+
+## Production Setup
+
+* Vercel (Next.js)
+* Supabase (Postgres)
+* Clerk (Auth)
+* Storage (Cloudinary or Supabase Storage)
+
+Environment separation:
+
+* Dev DB
+* Production DB
+
+Never share.
+
+---
+
+# 9. Security Considerations
+
+You must implement:
+
+* Strict server-only data fetching
+* No raw SQL from client
+* Input validation (Zod)
+* Rate limiting for login
+* File upload size limits
+* Daily backups
+
+---
+
+# 10. Performance Considerations
+
+Zimbabwe schools may have:
+
+* 500–2000 students
+* 30+ teachers
+* 6 classes per grade
+
+Plan for:
+
+* Pagination everywhere
+* Server-side filtering
+* Avoid N+1 queries
+* Use Prisma `include` carefully
+
+---
+
+# 11. Scaling Strategy
+
+Phase 1:
+
+* Single DB
+* Single deployment
+
+Phase 2:
+
+* Read replicas
+* Background jobs (for reports)
+
+Phase 3:
+
+* Event-driven notifications
+* Redis caching
+
+---
+
+# 12. Monitoring & Observability
+
+Add:
+
+* Error logging (Sentry)
+* Database monitoring
+* Audit log table:
+
+```prisma
+model AuditLog {
+  id        String
+  schoolId  String?
+  userId    String?
+  action    String
+  entity    String
+  entityId  String?
+  createdAt DateTime
+}
+```
+
+This is critical for real schools.
+
+---
+
+# 13. Super Admin (Platform Layer)
+
+Separate route:
+
+```
+/platform
+```
+
+Can:
+
+* View all schools
+* Suspend schools
+* Manage subscriptions
+* View revenue metrics
+
+Completely isolated from school routes.
+
+---
+
+# 14. Clean Separation of Concerns
+
+| Layer         | Responsibility |
+| ------------- | -------------- |
+| UI            | Rendering      |
+| Route Handler | Validation     |
+| Service       | Business Logic |
+| Prisma        | Data Access    |
+| DB            | Storage        |
+
+No cross-contamination.
+
+---
+
+# 15. Summary Architecture
+
+You are building:
+
+A multi-tenant, role-based, academic-lifecycle-driven SaaS with strict data isolation.
+
+Core pillars:
+
+1. School as root entity
+2. Enrollment-based academic model
+3. Strict tenant isolation
+4. Service-layer business logic
+5. Role-based authorization
+6. Subscription-ready platform layer
