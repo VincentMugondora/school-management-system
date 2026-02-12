@@ -6,7 +6,13 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "next lint",
+    "type-check": "tsc --noEmit",
+    "test": "jest",
+    "test:unit": "jest --testPathPattern='services' --coverage",
+    "test:integration": "jest --testPathPattern='integration' --coverage",
+    "test:coverage": "jest --coverage",
+    "test:watch": "jest --watch"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.4.0",
@@ -20,6 +26,8 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@testing-library/jest-dom": "^6.4.2",
+    "@types/jest": "^29.5.12",
     "@types/node": "^20",
     "@types/pg": "^8.16.0",
     "@types/react": "^19",
@@ -27,8 +35,11 @@
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
     "eslint-config-prettier": "^10.1.8",
+    "jest": "^29.7.0",
+    "jest-environment-node": "^29.7.0",
     "prettier": "^3.8.1",
     "tailwindcss": "^4",
+    "ts-jest": "^29.1.2",
     "typescript": "^5"
   }
 }
