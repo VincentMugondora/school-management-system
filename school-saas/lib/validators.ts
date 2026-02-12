@@ -121,6 +121,7 @@ export const createTermSchema = z.object({
     .transform(val => val.trim()),
   startDate: z.coerce.date(),
   endDate: z.coerce.date(),
+  isLocked: z.boolean().optional().default(false),
 });
 
 export const updateTermSchema = z.object({
