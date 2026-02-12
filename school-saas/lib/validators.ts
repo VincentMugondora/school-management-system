@@ -305,6 +305,128 @@ export const userFilterSchema = z.object({
 export const userIdSchema = z.string().uuid('Invalid user ID');
 
 // ============================================
+// TEACHER VALIDATION SCHEMAS
+// ============================================
+
+export const createTeacherSchema = z.object({
+  userId: z.string().uuid('Invalid user ID'),
+  employeeId: z
+    .string()
+    .max(50, 'Employee ID must not exceed 50 characters')
+    .optional()
+    .transform(val => val?.trim()),
+});
+
+export const updateTeacherSchema = z.object({
+  employeeId: z
+    .string()
+    .max(50, 'Employee ID must not exceed 50 characters')
+    .optional()
+    .nullable()
+    .transform(val => (val === '' ? null : val?.trim())),
+});
+
+export const teacherIdSchema = z.string().uuid('Invalid teacher ID');
+
+export const assignTeacherToClassSchema = z.object({
+  teacherId: z.string().uuid('Invalid teacher ID'),
+  classId: z.string().uuid('Invalid class ID'),
+});
+
+export const assignTeacherToSubjectSchema = z.object({
+  teacherId: z.string().uuid('Invalid teacher ID'),
+  subjectId: z.string().uuid('Invalid subject ID'),
+});
+
+// ============================================
+// CLASS VALIDATION SCHEMAS
+// ============================================
+
+export const createClassSchema = z.object({
+  name: z
+    .string()
+    .min(1, 'Class name is required')
+    .max(50, 'Class name must not exceed 50 characters')
+    .transform(val => val.trim()),
+  grade: z
+    .string()
+    .min(1, 'Grade is required')
+    .max(20, 'Grade must not exceed 20 characters')
+    .transform(val => val.trim()),
+  stream: z
+    .string()
+    .max(20, 'Stream must not exceed 20 characters')
+    .optional()
+    .transform(val => val?.trim()),
+  academicYearId: z.string().uuid('Invalid academic year ID'),
+  classTeacherId: z.string().uuid('Invalid teacher ID').optional(),
+});
+
+export const updateClassSchema = z.object({
+  name: z
+    .string()
+    .min(1, 'Class name is required')
+    .max(50, 'Class name must not exceed 50 characters')
+    .optional()
+    .transform(val => val?.trim()),
+  grade: z
+    .string()
+    .min(1, 'Grade is required')
+    .max(20, 'Grade must not exceed 20 characters')
+    .optional()
+    .transform(val => val?.trim()),
+  stream: z
+    .string()
+    .max(20, 'Stream must not exceed 20 characters')
+    .optional()
+    .nullable()
+    .transform(val => (val === '' ? null : val?.trim())),
+  classTeacherId: z.string().uuid('Invalid teacher ID').optional().nullable(),
+});
+
+export const classIdSchema = z.string().uuid('Invalid class ID');
+
+export const assignSubjectToClassSchema = z.object({
+  classId: z.string().uuid('Invalid class ID'),
+  subjectId: z.string().uuid('Invalid subject ID'),
+  teacherId: z.string().uuid('Invalid teacher ID').optional(),
+});
+
+// ============================================
+// SUBJECT VALIDATION SCHEMAS
+// ============================================
+
+export const createSubjectSchema = z.object({
+  name: z
+    .string()
+    .min(1, 'Subject name is required')
+    .max(100, 'Subject name must not exceed 100 characters')
+    .transform(val => val.trim()),
+  code: z
+    .string()
+    .max(20, 'Subject code must not exceed 20 characters')
+    .optional()
+    .transform(val => val?.trim()),
+});
+
+export const updateSubjectSchema = z.object({
+  name: z
+    .string()
+    .min(1, 'Subject name is required')
+    .max(100, 'Subject name must not exceed 100 characters')
+    .optional()
+    .transform(val => val?.trim()),
+  code: z
+    .string()
+    .max(20, 'Subject code must not exceed 20 characters')
+    .optional()
+    .nullable()
+    .transform(val => (val === '' ? null : val?.trim())),
+});
+
+export const subjectIdSchema = z.string().uuid('Invalid subject ID');
+
+// ============================================
 // TYPE INFERENCE
 // ============================================
 
@@ -328,3 +450,12 @@ export type UpdateEnrollmentInput = z.infer<typeof updateEnrollmentSchema>;
 export type CreateUserInput = z.infer<typeof createUserSchema>;
 export type UpdateUserInput = z.infer<typeof updateUserSchema>;
 export type UserFilterInput = z.infer<typeof userFilterSchema>;
+
+export type CreateTeacherInput = z.infer<typeof createTeacherSchema>;
+export type UpdateTeacherInput = z.infer<typeof updateTeacherSchema>;
+
+export type CreateClassInput = z.infer<typeof createClassSchema>;
+export type UpdateClassInput = z.infer<typeof updateClassSchema>;
+
+export type CreateSubjectInput = z.infer<typeof createSubjectSchema>;
+export type UpdateSubjectInput = z.infer<typeof updateSubjectSchema>;
