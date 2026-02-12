@@ -1,0 +1,513 @@
+Below is a **Product Requirements Document (PRD)** for your multi-tenant School Management SaaS.
+It is written to guide **clean architecture, maintainability, and strong security** from day one.
+
+---
+
+# PRODUCT REQUIREMENTS DOCUMENT (PRD)
+
+## Product Name
+
+Multi-Tenant School Management System (Zimbabwe Edition)
+
+## Document Version
+
+v1.0
+
+---
+
+# 1. Executive Summary
+
+The system is a cloud-based, multi-tenant School Management SaaS designed for Zimbabwean primary and secondary schools.
+
+It will provide:
+
+* Academic management
+* Student lifecycle management
+* Staff management
+* Exams and results
+* Attendance tracking
+* Fee management
+* Reporting
+* Role-based dashboards
+* Subscription-based access
+
+The system must be:
+
+* Secure by design
+* Multi-tenant isolated
+* Cleanly architected
+* Maintainable and extensible
+* Production-ready
+
+---
+
+# 2. Product Goals
+
+## 2.1 Business Goals
+
+* Deployable to multiple schools
+* Subscription-based revenue model
+* High trust and compliance
+* Scalable architecture
+
+## 2.2 Technical Goals
+
+* Strict tenant isolation
+* Clean separation of concerns
+* Centralized authorization logic
+* Minimal technical debt
+* Easy onboarding of new developers
+
+---
+
+# 3. Non-Goals (Phase 1)
+
+* Government integrations
+* National exam board integrations
+* SMS automation (optional later)
+* AI grading
+* Mobile native app
+
+---
+
+# 4. Target Users
+
+## 4.1 Platform Users
+
+* Super Admin (You)
+
+## 4.2 School Users
+
+* School Admin
+* Teacher
+* Student
+* Parent
+* Accountant
+
+---
+
+# 5. System Architecture Requirements
+
+## 5.1 Multi-Tenant Model
+
+Architecture:
+**Shared Database + Logical Isolation**
+
+Requirement:
+
+* Every school-owned record MUST contain `schoolId`
+* No cross-tenant queries allowed
+* Tenant isolation enforced server-side
+
+Acceptance Criteria:
+
+* A school user can never access another school’s data
+* All queries scoped by authenticated user’s schoolId
+
+---
+
+## 5.2 Technology Stack
+
+Frontend:
+
+* Next.js (App Router)
+* TypeScript (strict mode enabled)
+
+Backend:
+
+* Next.js server actions / API routes
+* Prisma ORM
+* PostgreSQL
+
+Authentication:
+
+* Clerk
+
+Hosting:
+
+* Vercel
+
+File Storage:
+
+* Cloudinary or Supabase Storage
+
+---
+
+# 6. Functional Requirements
+
+---
+
+# 6.1 School Management
+
+### Features
+
+* Create school (Super Admin)
+* Edit school profile
+* Activate / suspend school
+* Subscription management
+
+---
+
+# 6.2 User & Role Management
+
+### Features
+
+* Invite users
+* Assign role
+* Activate / deactivate user
+* Role-based access enforcement
+
+### Roles
+
+* SUPER_ADMIN
+* ADMIN
+* TEACHER
+* STUDENT
+* PARENT
+* ACCOUNTANT
+
+Acceptance Criteria:
+
+* Roles enforced server-side
+* UI does not control security
+
+---
+
+# 6.3 Academic Year Management
+
+### Features
+
+* Create academic year
+* Set current academic year
+* Lock academic year
+* Create terms
+* Lock term
+
+Constraints:
+
+* Only one current academic year per school
+* Cannot delete academic year with enrollments
+
+---
+
+# 6.4 Class & Subject Management
+
+### Features
+
+* Create classes per academic year
+* Assign class teacher
+* Create subjects
+* Assign subjects to classes
+
+---
+
+# 6.5 Student Lifecycle
+
+### Features
+
+* Register student
+* Assign parent
+* Enroll student per academic year
+* Promote students
+* Archive students
+
+Critical Requirement:
+
+* Student class must be managed via Enrollment model
+* Historical records must be preserved
+
+---
+
+# 6.6 Promotion Engine
+
+### Requirements
+
+Promotion must:
+
+* Be transaction-safe
+* Prevent partial promotions
+* Create new enrollments
+* Mark old enrollments complete
+* Log audit entry
+
+Failure must rollback all changes.
+
+---
+
+# 6.7 Exams & Results
+
+### Features
+
+* Create exams
+* Assign exams to class + subject + term
+* Enter marks
+* Calculate total and average
+* Rank students
+
+Constraints:
+
+* Unique result per (exam, enrollment)
+* Term must not be locked to edit marks
+
+---
+
+# 6.8 Attendance
+
+### Features
+
+* Daily attendance per class
+* Term attendance report
+* Student attendance history
+
+Constraints:
+
+* One attendance entry per student per day
+
+---
+
+# 6.9 Finance Module (Phase 1)
+
+### Features
+
+* Define fee structure per class
+* Generate invoice per student per term
+* Record payments
+* Track outstanding balances
+
+Constraints:
+
+* Partial payments supported
+* Invoice status auto-updated
+
+---
+
+# 6.10 Reporting
+
+### Reports
+
+* Student report card
+* Class performance summary
+* Fee statement
+* Enrollment statistics
+
+Reports must:
+
+* Be generated server-side
+* Respect role permissions
+
+---
+
+# 7. Non-Functional Requirements
+
+---
+
+# 7.1 Security Requirements
+
+## Authentication
+
+* All routes protected
+* Server-side session verification only
+
+## Authorization
+
+* Role-based access checks centralized
+* No role checks inside client-only logic
+
+## Tenant Isolation
+
+* All queries include schoolId filter
+* schoolId never accepted from client input
+
+## Data Validation
+
+* All input validated with Zod
+* Strict schema validation
+
+## Sensitive Data
+
+* No plaintext passwords stored
+* Environment variables secured
+* No secrets in repo
+
+## Logging
+
+* Audit logs for:
+
+  * Promotions
+  * Fee payments
+  * Role changes
+  * Academic year changes
+
+---
+
+# 7.2 Maintainability Requirements
+
+## Code Standards
+
+* TypeScript strict mode enabled
+* ESLint enforced
+* Prettier formatting
+* No any types allowed
+
+## Architecture
+
+Must follow:
+
+UI → Route → Service → Prisma → DB
+
+Business logic:
+
+* Must not exist in components
+* Must not exist in route handlers
+
+All business logic must exist in `/services`.
+
+---
+
+## Folder Structure Requirement
+
+```
+/app
+/services
+/lib
+/prisma
+/types
+/middleware
+```
+
+---
+
+## Service Layer Requirements
+
+Each domain must have a service file:
+
+Example:
+
+* student.service.ts
+* enrollment.service.ts
+* finance.service.ts
+* academicYear.service.ts
+
+Services must:
+
+* Receive user context
+* Enforce authorization
+* Enforce tenant isolation
+* Contain transaction logic
+
+---
+
+# 7.3 Performance Requirements
+
+* Pagination on all large lists
+* Index schoolId on all tables
+* Composite indexes on common filters
+* No N+1 query patterns
+
+---
+
+# 7.4 Scalability Requirements
+
+Must support:
+
+* 100+ schools
+* 2000+ students per school
+* Concurrent teacher mark entry
+
+Database must:
+
+* Use connection pooling
+* Use indexed queries
+
+---
+
+# 8. Audit & Monitoring
+
+System must:
+
+* Log critical actions
+* Store audit logs per school
+* Allow super admin platform overview
+
+Optional:
+
+* Integrate Sentry for error tracking
+
+---
+
+# 9. Deployment Requirements
+
+* Separate dev and production DB
+* Environment variables configured securely
+* Automatic migration workflow
+* Database backups enabled
+
+---
+
+# 10. Acceptance Criteria
+
+System is production-ready when:
+
+* Multi-tenant isolation is tested
+* Role enforcement tested
+* Promotion works without partial failures
+* No unscoped DB queries exist
+* All input validated
+* Audit logs functioning
+* Security review completed
+
+---
+
+# 11. Quality Assurance Requirements
+
+Must include:
+
+* Unit tests for services
+* Integration tests for:
+
+  * Promotion
+  * Enrollment
+  * Finance payments
+* Manual penetration-style testing for tenant isolation
+
+---
+
+# 12. Risks
+
+| Risk                   | Mitigation                  |
+| ---------------------- | --------------------------- |
+| Cross-tenant data leak | Strict schoolId enforcement |
+| Poor promotion logic   | Use transactions            |
+| Overcoupled code       | Service layer separation    |
+| Security holes         | Centralized auth logic      |
+| Poor performance       | Indexed DB design           |
+
+---
+
+# 13. Definition of Done
+
+Feature is done when:
+
+* Service implemented
+* Validation added
+* Authorization enforced
+* Unit tests written
+* Code reviewed
+* Documentation updated
+
+---
+
+# Final Product Vision
+
+You are not building a student dashboard.
+
+You are building:
+
+A secure, multi-tenant academic operating system for Zimbabwean schools.
+
+It must be:
+
+* Architecturally clean
+* Secure by default
+* Maintainable by a team
+* Scalable without rewrite
