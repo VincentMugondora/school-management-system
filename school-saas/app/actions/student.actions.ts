@@ -405,6 +405,73 @@ export async function completeEnrollment(
 }
 
 /**
+ * Promote students to next academic year
+ */
+export async function promoteStudents(
+  input: {
+    studentIds: string[];
+    targetAcademicYearId: string;
+    targetClassId: string;
+    markPreviousAsCompleted?: boolean;
+  }
+): Promise<{ success: true; data: Enrollment[] } | { success: false; error: string }> {
+  try {
+    const context = await getCurrentUser();
+    if (!context) return { success: false, error: 'Unauthorized' };
+
+    const enrollments = await EnrollmentService.promoteStudents(input, context);
+    revalidatePath('/enrollments');
+    return { success: true, data: enrollments };
+  } catch (error) {
+    return handleServiceError(error);
+  }
+}
+
+/**
+ * Bulk create enrollments
+ */
+export async function bulkCreateEnrollments(
+  data: {
+    studentId: string;
+    academicYearId: string;
+    classId: string;
+    status?: EnrollmentStatus;
+  }[]
+): Promise<{ success: true; data: { enrollments: Enrollment[]; errors: { studentId: string; error: string }[] } } | { success: false; error: string }> {
+  try {
+    const context = await getCurrentUser();
+    if (!context) return { success: false, error: 'Unauthorized' };
+
+    const result = await EnrollmentService.bulkCreateEnrollments(data, context);
+    revalidatePath('/enrollments');
+    return { success: true, data: result };
+  } catch (error) {
+    return handleServiceError(error);
+  }
+}
+
+/**
+ * Mark previous enrollments as completed for a student
+ */
+export async function markPreviousEnrollmentsAsCompleted(
+  studentId: string
+): Promise<{ success: true; data: { count: number } } | { success: false; error: string }> {
+  try {
+    const context = await getCurrentUser();
+    if (!context) return { success: false, error: 'Unauthorized' };
+
+    const idValidation = studentIdSchema.safeParse(studentId);
+    if (!idValidation.success) return { success: false, error: 'Invalid student ID' };
+
+    const count = await EnrollmentService.markPreviousEnrollmentsAsCompleted(idValidation.data, context);
+    revalidatePath('/enrollments');
+    return { success: true, data: { count } };
+  } catch (error) {
+    return handleServiceError(error);
+  }
+}
+
+/**
  * Delete enrollment
  */
 export async function deleteEnrollment(
