@@ -1,0 +1,426 @@
+'use server';
+
+import { StudentService } from '@/services/student.service';
+import { EnrollmentService } from '@/services/enrollment.service';
+import {
+  createStudentSchema,
+  updateStudentSchema,
+  studentIdSchema,
+  studentFilterSchema,
+  createEnrollmentSchema,
+  updateEnrollmentSchema,
+  enrollmentIdSchema,
+  CreateStudentInput,
+  UpdateStudentInput,
+  CreateEnrollmentInput,
+  UpdateEnrollmentInput,
+} from '@/lib/validators';
+import { Student, Enrollment, EnrollmentStatus, Gender, Role } from '@prisma/client';
+import { ServiceContext, ServiceError } from '@/types/domain.types';
+import { revalidatePath } from 'next/cache';
+
+// ============================================
+// MOCK AUTHENTICATION - Replace with Clerk when ready
+// ============================================
+
+async function getCurrentUser(): Promise<ServiceContext | null> {
+  // TODO: Replace with actual Clerk authentication
+  return {
+    userId: 'mock-user-id',
+    schoolId: 'mock-school-id',
+    role: Role.ADMIN,
+  };
+}
+
+// ============================================
+// ERROR HANDLER
+// ============================================
+
+function handleServiceError(error: unknown): { success: false; error: string } {
+  if (error instanceof ServiceError) {
+    return { success: false, error: error.message };
+  }
+  if (error instanceof Error) {
+    return { success: false, error: error.message };
+  }
+  return { success: false, error: 'An unexpected error occurred' };
+}
+
+// Type definitions for return data
+type StudentParent = { id: string; user: { firstName: string; lastName: string } };
+type StudentEnrollment = { id: string; status: string; academicYear: { name: string }; class: { name: string } };
+type StudentCount = { enrollments: number; results: number; attendances: number };
+type StudentWithRelations = Student & {
+  parent: StudentParent | null;
+  enrollments: StudentEnrollment[];
+  _count: StudentCount;
+};
+
+// ============================================
+// STUDENT SERVER ACTIONS
+// ============================================
+
+/**
+ * Create a new student
+ */
+export async function createStudent(
+  input: CreateStudentInput
+): Promise<{ success: true; data: Student } | { success: false; error: string }> {
+  try {
+    const context = await getCurrentUser();
+    if (!context) return { success: false, error: 'Unauthorized' };
+
+    const validation = createStudentSchema.safeParse(input);
+    if (!validation.success) {
+      return { success: false, error: validation.error.issues.map(i => i.message).join(', ') };
+    }
+
+    const student = await StudentService.createStudent(validation.data, context);
+    revalidatePath('/students');
+    return { success: true, data: student };
+  } catch (error) {
+    return handleServiceError(error);
+  }
+}
+
+/**
+ * Get student by ID
+ */
+export async function getStudentById(
+  id: string
+): Promise<{ success: true; data: StudentWithRelations } | { success: false; error: string }> {
+  try {
+    const context = await getCurrentUser();
+    if (!context) return { success: false, error: 'Unauthorized' };
+
+    const idValidation = studentIdSchema.safeParse(id);
+    if (!idValidation.success) return { success: false, error: 'Invalid student ID' };
+
+    const student = await StudentService.getStudentById(idValidation.data, context);
+    if (!student) return { success: false, error: 'Student not found' };
+
+    return { success: true, data: student };
+  } catch (error) {
+    return handleServiceError(error);
+  }
+}
+
+/**
+ * List students
+ */
+export async function listStudents(
+  filters?: {
+    search?: string;
+    gender?: Gender;
+    hasParent?: boolean;
+    page?: number;
+    limit?: number;
+  }
+): Promise<{ success: true; data: { students: Student[]; total: number } } | { success: false; error: string }> {
+  try {
+    const context = await getCurrentUser();
+    if (!context) return { success: false, error: 'Unauthorized' };
+
+    const result = await StudentService.listStudents(context, filters);
+    return { success: true, data: result };
+  } catch (error) {
+    return handleServiceError(error);
+  }
+}
+
+/**
+ * Update student
+ */
+export async function updateStudent(
+  id: string,
+  input: UpdateStudentInput
+): Promise<{ success: true; data: Student } | { success: false; error: string }> {
+  try {
+    const context = await getCurrentUser();
+    if (!context) return { success: false, error: 'Unauthorized' };
+
+    const idValidation = studentIdSchema.safeParse(id);
+    if (!idValidation.success) return { success: false, error: 'Invalid student ID' };
+
+    const validation = updateStudentSchema.safeParse(input);
+    if (!validation.success) {
+      return { success: false, error: validation.error.issues.map(i => i.message).join(', ') };
+    }
+
+    const student = await StudentService.updateStudent(idValidation.data, validation.data, context);
+    revalidatePath('/students');
+    return { success: true, data: student };
+  } catch (error) {
+    return handleServiceError(error);
+  }
+}
+
+/**
+ * Soft delete student
+ */
+export async function deleteStudent(
+  id: string
+): Promise<{ success: true } | { success: false; error: string }> {
+  try {
+    const context = await getCurrentUser();
+    if (!context) return { success: false, error: 'Unauthorized' };
+
+    const idValidation = studentIdSchema.safeParse(id);
+    if (!idValidation.success) return { success: false, error: 'Invalid student ID' };
+
+    await StudentService.deleteStudent(idValidation.data, context);
+    revalidatePath('/students');
+    return { success: true };
+  } catch (error) {
+    return handleServiceError(error);
+  }
+}
+
+/**
+ * Restore soft-deleted student
+ */
+export async function restoreStudent(
+  id: string
+): Promise<{ success: true; data: Student } | { success: false; error: string }> {
+  try {
+    const context = await getCurrentUser();
+    if (!context) return { success: false, error: 'Unauthorized' };
+
+    const idValidation = studentIdSchema.safeParse(id);
+    if (!idValidation.success) return { success: false, error: 'Invalid student ID' };
+
+    const student = await StudentService.restoreStudent(idValidation.data, context);
+    revalidatePath('/students');
+    return { success: true, data: student };
+  } catch (error) {
+    return handleServiceError(error);
+  }
+}
+
+// ============================================
+// ENROLLMENT SERVER ACTIONS
+// ============================================
+
+type EnrollmentStudent = { id: string; firstName: string; lastName: string; studentId: string | null };
+type EnrollmentYear = { id: string; name: string };
+type EnrollmentClass = { id: string; name: string; grade: string };
+type EnrollmentCount = { results: number; attendances: number; invoices: number };
+type EnrollmentWithRelations = Enrollment & {
+  student: EnrollmentStudent;
+  academicYear: EnrollmentYear;
+  class: EnrollmentClass;
+  _count: EnrollmentCount;
+};
+
+/**
+ * Create a new enrollment
+ */
+export async function createEnrollment(
+  input: CreateEnrollmentInput
+): Promise<{ success: true; data: Enrollment } | { success: false; error: string }> {
+  try {
+    const context = await getCurrentUser();
+    if (!context) return { success: false, error: 'Unauthorized' };
+
+    const validation = createEnrollmentSchema.safeParse(input);
+    if (!validation.success) {
+      return { success: false, error: validation.error.issues.map(i => i.message).join(', ') };
+    }
+
+    const enrollment = await EnrollmentService.createEnrollment(validation.data, context);
+    revalidatePath('/enrollments');
+    return { success: true, data: enrollment };
+  } catch (error) {
+    return handleServiceError(error);
+  }
+}
+
+/**
+ * Get enrollment by ID
+ */
+export async function getEnrollmentById(
+  id: string
+): Promise<{ success: true; data: EnrollmentWithRelations } | { success: false; error: string }> {
+  try {
+    const context = await getCurrentUser();
+    if (!context) return { success: false, error: 'Unauthorized' };
+
+    const idValidation = enrollmentIdSchema.safeParse(id);
+    if (!idValidation.success) return { success: false, error: 'Invalid enrollment ID' };
+
+    const enrollment = await EnrollmentService.getEnrollmentById(idValidation.data, context);
+    if (!enrollment) return { success: false, error: 'Enrollment not found' };
+
+    return { success: true, data: enrollment };
+  } catch (error) {
+    return handleServiceError(error);
+  }
+}
+
+/**
+ * List enrollments by student
+ */
+export async function listEnrollmentsByStudent(
+  studentId: string
+): Promise<{ success: true; data: Enrollment[] } | { success: false; error: string }> {
+  try {
+    const context = await getCurrentUser();
+    if (!context) return { success: false, error: 'Unauthorized' };
+
+    const idValidation = studentIdSchema.safeParse(studentId);
+    if (!idValidation.success) return { success: false, error: 'Invalid student ID' };
+
+    const enrollments = await EnrollmentService.listEnrollmentsByStudent(idValidation.data, context);
+    return { success: true, data: enrollments };
+  } catch (error) {
+    return handleServiceError(error);
+  }
+}
+
+/**
+ * List enrollments by class
+ */
+export async function listEnrollmentsByClass(
+  classId: string,
+  status?: EnrollmentStatus
+): Promise<{ success: true; data: (Enrollment & { student: { firstName: string; lastName: string; studentId: string | null } })[] } | { success: false; error: string }> {
+  try {
+    const context = await getCurrentUser();
+    if (!context) return { success: false, error: 'Unauthorized' };
+
+    const enrollments = await EnrollmentService.listEnrollmentsByClass(classId, context, status);
+    return { success: true, data: enrollments };
+  } catch (error) {
+    return handleServiceError(error);
+  }
+}
+
+/**
+ * List enrollments by academic year
+ */
+export async function listEnrollmentsByAcademicYear(
+  academicYearId: string,
+  status?: EnrollmentStatus
+): Promise<{ success: true; data: (Enrollment & { student: { firstName: string; lastName: string; studentId: string | null }; class: { name: string; grade: string } })[] } | { success: false; error: string }> {
+  try {
+    const context = await getCurrentUser();
+    if (!context) return { success: false, error: 'Unauthorized' };
+
+    const enrollments = await EnrollmentService.listEnrollmentsByAcademicYear(academicYearId, context, status);
+    return { success: true, data: enrollments };
+  } catch (error) {
+    return handleServiceError(error);
+  }
+}
+
+/**
+ * Update enrollment
+ */
+export async function updateEnrollment(
+  id: string,
+  input: UpdateEnrollmentInput
+): Promise<{ success: true; data: Enrollment } | { success: false; error: string }> {
+  try {
+    const context = await getCurrentUser();
+    if (!context) return { success: false, error: 'Unauthorized' };
+
+    const idValidation = enrollmentIdSchema.safeParse(id);
+    if (!idValidation.success) return { success: false, error: 'Invalid enrollment ID' };
+
+    const validation = updateEnrollmentSchema.safeParse(input);
+    if (!validation.success) {
+      return { success: false, error: validation.error.issues.map(i => i.message).join(', ') };
+    }
+
+    const enrollment = await EnrollmentService.updateEnrollment(idValidation.data, validation.data, context);
+    revalidatePath('/enrollments');
+    return { success: true, data: enrollment };
+  } catch (error) {
+    return handleServiceError(error);
+  }
+}
+
+/**
+ * Transfer student to another class
+ */
+export async function transferStudent(
+  enrollmentId: string,
+  newClassId: string
+): Promise<{ success: true; data: Enrollment } | { success: false; error: string }> {
+  try {
+    const context = await getCurrentUser();
+    if (!context) return { success: false, error: 'Unauthorized' };
+
+    const idValidation = enrollmentIdSchema.safeParse(enrollmentId);
+    if (!idValidation.success) return { success: false, error: 'Invalid enrollment ID' };
+
+    const enrollment = await EnrollmentService.transferStudent(idValidation.data, newClassId, context);
+    revalidatePath('/enrollments');
+    return { success: true, data: enrollment };
+  } catch (error) {
+    return handleServiceError(error);
+  }
+}
+
+/**
+ * Drop enrollment
+ */
+export async function dropEnrollment(
+  id: string
+): Promise<{ success: true; data: Enrollment } | { success: false; error: string }> {
+  try {
+    const context = await getCurrentUser();
+    if (!context) return { success: false, error: 'Unauthorized' };
+
+    const idValidation = enrollmentIdSchema.safeParse(id);
+    if (!idValidation.success) return { success: false, error: 'Invalid enrollment ID' };
+
+    const enrollment = await EnrollmentService.dropEnrollment(idValidation.data, context);
+    revalidatePath('/enrollments');
+    return { success: true, data: enrollment };
+  } catch (error) {
+    return handleServiceError(error);
+  }
+}
+
+/**
+ * Complete enrollment
+ */
+export async function completeEnrollment(
+  id: string
+): Promise<{ success: true; data: Enrollment } | { success: false; error: string }> {
+  try {
+    const context = await getCurrentUser();
+    if (!context) return { success: false, error: 'Unauthorized' };
+
+    const idValidation = enrollmentIdSchema.safeParse(id);
+    if (!idValidation.success) return { success: false, error: 'Invalid enrollment ID' };
+
+    const enrollment = await EnrollmentService.completeEnrollment(idValidation.data, context);
+    revalidatePath('/enrollments');
+    return { success: true, data: enrollment };
+  } catch (error) {
+    return handleServiceError(error);
+  }
+}
+
+/**
+ * Delete enrollment
+ */
+export async function deleteEnrollment(
+  id: string
+): Promise<{ success: true } | { success: false; error: string }> {
+  try {
+    const context = await getCurrentUser();
+    if (!context) return { success: false, error: 'Unauthorized' };
+
+    const idValidation = enrollmentIdSchema.safeParse(id);
+    if (!idValidation.success) return { success: false, error: 'Invalid enrollment ID' };
+
+    await EnrollmentService.deleteEnrollment(idValidation.data, context);
+    revalidatePath('/enrollments');
+    return { success: true };
+  } catch (error) {
+    return handleServiceError(error);
+  }
+}

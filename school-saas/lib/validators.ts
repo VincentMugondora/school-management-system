@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { SchoolStatus, AcademicYearStatus, TermStatus } from '@prisma/client';
+import { SchoolStatus, AcademicYearStatus, TermStatus, Gender, EnrollmentStatus } from '@prisma/client';
 
 // ============================================
 // SCHOOL VALIDATION SCHEMAS
@@ -138,6 +138,118 @@ export const updateTermSchema = z.object({
 export const termIdSchema = z.string().uuid('Invalid term ID');
 
 // ============================================
+// STUDENT VALIDATION SCHEMAS
+// ============================================
+
+export const createStudentSchema = z.object({
+  firstName: z
+    .string()
+    .min(1, 'First name is required')
+    .max(50, 'First name must not exceed 50 characters')
+    .transform(val => val.trim()),
+  lastName: z
+    .string()
+    .min(1, 'Last name is required')
+    .max(50, 'Last name must not exceed 50 characters')
+    .transform(val => val.trim()),
+  dateOfBirth: z.coerce.date().optional(),
+  gender: z.nativeEnum(Gender).optional(),
+  address: z
+    .string()
+    .max(255, 'Address must not exceed 255 characters')
+    .optional()
+    .transform(val => val?.trim()),
+  phone: z
+    .string()
+    .max(20, 'Phone must not exceed 20 characters')
+    .optional()
+    .transform(val => val?.trim()),
+  email: z
+    .string()
+    .email('Invalid email address')
+    .max(100, 'Email must not exceed 100 characters')
+    .optional()
+    .transform(val => val?.toLowerCase().trim()),
+  studentId: z
+    .string()
+    .max(50, 'Student ID must not exceed 50 characters')
+    .optional()
+    .transform(val => val?.trim()),
+  parentId: z.string().uuid('Invalid parent ID').optional(),
+});
+
+export const updateStudentSchema = z.object({
+  firstName: z
+    .string()
+    .min(1, 'First name is required')
+    .max(50, 'First name must not exceed 50 characters')
+    .optional()
+    .transform(val => val?.trim()),
+  lastName: z
+    .string()
+    .min(1, 'Last name is required')
+    .max(50, 'Last name must not exceed 50 characters')
+    .optional()
+    .transform(val => val?.trim()),
+  dateOfBirth: z.coerce.date().optional().nullable(),
+  gender: z.nativeEnum(Gender).optional().nullable(),
+  address: z
+    .string()
+    .max(255, 'Address must not exceed 255 characters')
+    .optional()
+    .nullable()
+    .transform(val => (val === '' ? null : val?.trim())),
+  phone: z
+    .string()
+    .max(20, 'Phone must not exceed 20 characters')
+    .optional()
+    .nullable()
+    .transform(val => (val === '' ? null : val?.trim())),
+  email: z
+    .string()
+    .email('Invalid email address')
+    .max(100, 'Email must not exceed 100 characters')
+    .optional()
+    .nullable()
+    .transform(val => (val === '' ? null : val?.toLowerCase().trim())),
+  studentId: z
+    .string()
+    .max(50, 'Student ID must not exceed 50 characters')
+    .optional()
+    .nullable()
+    .transform(val => (val === '' ? null : val?.trim())),
+  parentId: z.string().uuid('Invalid parent ID').optional().nullable(),
+});
+
+export const studentFilterSchema = z.object({
+  search: z.string().optional(),
+  gender: z.nativeEnum(Gender).optional(),
+  hasParent: z.boolean().optional(),
+  page: z.number().int().positive().default(1),
+  limit: z.number().int().positive().max(100).default(20),
+});
+
+export const studentIdSchema = z.string().uuid('Invalid student ID');
+
+// ============================================
+// ENROLLMENT VALIDATION SCHEMAS
+// ============================================
+
+export const createEnrollmentSchema = z.object({
+  studentId: z.string().uuid('Invalid student ID'),
+  academicYearId: z.string().uuid('Invalid academic year ID'),
+  classId: z.string().uuid('Invalid class ID'),
+  status: z.nativeEnum(EnrollmentStatus).optional(),
+});
+
+export const updateEnrollmentSchema = z.object({
+  classId: z.string().uuid('Invalid class ID').optional(),
+  status: z.nativeEnum(EnrollmentStatus).optional(),
+});
+
+export const enrollmentIdSchema = z.string().uuid('Invalid enrollment ID');
+
+// ============================================
 // TYPE INFERENCE
 // ============================================
 
@@ -150,3 +262,10 @@ export type UpdateAcademicYearInput = z.infer<typeof updateAcademicYearSchema>;
 
 export type CreateTermInput = z.infer<typeof createTermSchema>;
 export type UpdateTermInput = z.infer<typeof updateTermSchema>;
+
+export type CreateStudentInput = z.infer<typeof createStudentSchema>;
+export type UpdateStudentInput = z.infer<typeof updateStudentSchema>;
+export type StudentFilterInput = z.infer<typeof studentFilterSchema>;
+
+export type CreateEnrollmentInput = z.infer<typeof createEnrollmentSchema>;
+export type UpdateEnrollmentInput = z.infer<typeof updateEnrollmentSchema>;
