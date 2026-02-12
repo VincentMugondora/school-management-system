@@ -39,9 +39,9 @@ export interface CreateSchoolInput {
 
 export interface UpdateSchoolInput {
   name?: string;
-  address?: string;
-  phone?: string;
-  email?: string;
+  address?: string | null;
+  phone?: string | null;
+  email?: string | null;
   status?: SchoolStatus;
 }
 
