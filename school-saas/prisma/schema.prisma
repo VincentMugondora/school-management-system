@@ -86,8 +86,11 @@ model School {
   subjects      Subject[]
   enrollments   Enrollment[]
   exams         Exam[]
+  results       Result[]
+  attendances   Attendance[]
   feeStructures FeeStructure[]
   invoices      Invoice[]
+  payments      Payment[]
   auditLogs     AuditLog[]
   subscriptions Subscription[]
 
