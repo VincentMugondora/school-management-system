@@ -82,8 +82,10 @@ model School {
   teachers      Teacher[]
   parents       Parent[]
   academicYears AcademicYear[]
+  terms         Term[]
   classes       Class[]
   subjects      Subject[]
+  classSubjects ClassSubject[]
   enrollments   Enrollment[]
   exams         Exam[]
   results       Result[]
@@ -161,10 +163,11 @@ model Teacher {
   updatedAt DateTime  @updatedAt
 
   // Relations
-  school    School    @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  classes   Class[]   @relation("ClassTeacher")
+  school    School       @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  classes   Class[]      @relation("ClassTeacher")
   subjects  Subject[]
+  classSubjects ClassSubject[]
 
   @@index([schoolId])
   @@index([userId])
@@ -290,7 +293,7 @@ model ClassSubject {
   school    School    @relation(fields: [schoolId], references: [id], onDelete: Cascade)
   class     Class     @relation(fields: [classId], references: [id], onDelete: Cascade)
   subject   Subject   @relation(fields: [subjectId], references: [id], onDelete: Cascade)
-  teacher   Teacher?  @relation(fields: [teacherId], references: [id])
+  teacher   Teacher?  @relation(fields: [teacherId], references: [id], onDelete: SetNull)
 
   @@unique([classId, subjectId])
   @@index([schoolId])
