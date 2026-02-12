@@ -427,6 +427,95 @@ export const updateSubjectSchema = z.object({
 export const subjectIdSchema = z.string().uuid('Invalid subject ID');
 
 // ============================================
+// EXAM VALIDATION SCHEMAS
+// ============================================
+
+export const createExamSchema = z.object({
+  name: z
+    .string()
+    .min(1, 'Exam name is required')
+    .max(100, 'Exam name must not exceed 100 characters')
+    .transform(val => val.trim()),
+  maxMarks: z.number().int().positive('Maximum marks must be greater than 0'),
+  examDate: z.coerce.date(),
+  academicYearId: z.string().uuid('Invalid academic year ID'),
+  termId: z.string().uuid('Invalid term ID'),
+  classId: z.string().uuid('Invalid class ID'),
+  subjectId: z.string().uuid('Invalid subject ID'),
+});
+
+export const updateExamSchema = z.object({
+  name: z
+    .string()
+    .min(1, 'Exam name is required')
+    .max(100, 'Exam name must not exceed 100 characters')
+    .optional()
+    .transform(val => val?.trim()),
+  maxMarks: z.number().int().positive('Maximum marks must be greater than 0').optional(),
+  examDate: z.coerce.date().optional(),
+});
+
+export const examIdSchema = z.string().uuid('Invalid exam ID');
+
+// ============================================
+// RESULT VALIDATION SCHEMAS
+// ============================================
+
+export const createResultSchema = z.object({
+  enrollmentId: z.string().uuid('Invalid enrollment ID'),
+  examId: z.string().uuid('Invalid exam ID'),
+  marks: z.number().min(0, 'Marks cannot be negative'),
+  grade: z.string().max(5).optional(),
+  remarks: z.string().max(255).optional(),
+});
+
+export const updateResultSchema = z.object({
+  marks: z.number().min(0, 'Marks cannot be negative').optional(),
+  grade: z.string().max(5).optional(),
+  remarks: z.string().max(255).optional(),
+});
+
+export const resultIdSchema = z.string().uuid('Invalid result ID');
+
+export const bulkEnterResultsSchema = z.object({
+  examId: z.string().uuid('Invalid exam ID'),
+  results: z.array(
+    z.object({
+      enrollmentId: z.string().uuid('Invalid enrollment ID'),
+      marks: z.number().min(0, 'Marks cannot be negative'),
+      remarks: z.string().max(255).optional(),
+    })
+  ).min(1, 'At least one result is required'),
+});
+
+// ============================================
+// ATTENDANCE VALIDATION SCHEMAS
+// ============================================
+
+export const markAttendanceSchema = z.object({
+  enrollmentId: z.string().uuid('Invalid enrollment ID'),
+  termId: z.string().uuid('Invalid term ID'),
+  date: z.coerce.date(),
+  isPresent: z.boolean(),
+  remarks: z.string().max(255).optional(),
+});
+
+export const bulkUpdateAttendanceSchema = z.object({
+  classId: z.string().uuid('Invalid class ID'),
+  termId: z.string().uuid('Invalid term ID'),
+  date: z.coerce.date(),
+  attendances: z.array(
+    z.object({
+      enrollmentId: z.string().uuid('Invalid enrollment ID'),
+      isPresent: z.boolean(),
+      remarks: z.string().max(255).optional(),
+    })
+  ).min(1, 'At least one attendance record is required'),
+});
+
+export const attendanceIdSchema = z.string().uuid('Invalid attendance ID');
+
+// ============================================
 // TYPE INFERENCE
 // ============================================
 
