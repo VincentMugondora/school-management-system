@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/db';
-import { Student, Gender, Role, Prisma } from '@prisma/client';
+import { Role } from '@prisma/client';
 import {
   ServiceContext,
   NotFoundError,
@@ -7,6 +7,7 @@ import {
   ValidationError,
   ConflictError,
 } from '@/types/domain.types';
+import { requireRole, RoleGroups } from '@/lib/auth';
 
 // ============================================
 // AUTHORIZATION HELPERS
