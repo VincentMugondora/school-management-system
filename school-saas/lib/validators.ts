@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { SchoolStatus, AcademicYearStatus, TermStatus, Gender, EnrollmentStatus } from '@prisma/client';
+import { SchoolStatus, AcademicYearStatus, TermStatus, Gender, EnrollmentStatus, Role } from '@prisma/client';
 
 // ============================================
 // SCHOOL VALIDATION SCHEMAS
@@ -250,6 +250,60 @@ export const updateEnrollmentSchema = z.object({
 export const enrollmentIdSchema = z.string().uuid('Invalid enrollment ID');
 
 // ============================================
+// USER VALIDATION SCHEMAS
+// ============================================
+
+export const createUserSchema = z.object({
+  clerkId: z
+    .string()
+    .min(1, 'Clerk ID is required')
+    .transform(val => val.trim()),
+  email: z
+    .string()
+    .email('Invalid email address')
+    .transform(val => val.toLowerCase().trim()),
+  firstName: z
+    .string()
+    .max(50, 'First name must not exceed 50 characters')
+    .optional()
+    .transform(val => val?.trim()),
+  lastName: z
+    .string()
+    .max(50, 'Last name must not exceed 50 characters')
+    .optional()
+    .transform(val => val?.trim()),
+  role: z.nativeEnum(Role),
+  schoolId: z.string().uuid('Invalid school ID').optional(),
+});
+
+export const updateUserSchema = z.object({
+  firstName: z
+    .string()
+    .max(50, 'First name must not exceed 50 characters')
+    .optional()
+    .transform(val => val?.trim()),
+  lastName: z
+    .string()
+    .max(50, 'Last name must not exceed 50 characters')
+    .optional()
+    .transform(val => val?.trim()),
+  role: z.nativeEnum(Role).optional(),
+  schoolId: z.string().uuid('Invalid school ID').optional().nullable(),
+  isActive: z.boolean().optional(),
+});
+
+export const userFilterSchema = z.object({
+  role: z.nativeEnum(Role).optional(),
+  schoolId: z.string().uuid('Invalid school ID').optional(),
+  isActive: z.boolean().optional(),
+  search: z.string().optional(),
+  page: z.number().int().positive().default(1),
+  limit: z.number().int().positive().max(100).default(20),
+});
+
+export const userIdSchema = z.string().uuid('Invalid user ID');
+
+// ============================================
 // TYPE INFERENCE
 // ============================================
 
@@ -269,3 +323,7 @@ export type StudentFilterInput = z.infer<typeof studentFilterSchema>;
 
 export type CreateEnrollmentInput = z.infer<typeof createEnrollmentSchema>;
 export type UpdateEnrollmentInput = z.infer<typeof updateEnrollmentSchema>;
+
+export type CreateUserInput = z.infer<typeof createUserSchema>;
+export type UpdateUserInput = z.infer<typeof updateUserSchema>;
+export type UserFilterInput = z.infer<typeof userFilterSchema>;
