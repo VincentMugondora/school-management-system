@@ -90,7 +90,7 @@ export async function createAcademicYear(
  */
 export async function getAcademicYearById(
   id: string
-): Promise<{ success: true; data: AcademicYear & { terms: any[]; _count: any } } | { success: false; error: string }> {
+): Promise<{ success: true; data: AcademicYearWithRelations } | { success: false; error: string }> {
   try {
     const context = await getCurrentUser();
     if (!context) return { success: false, error: 'Unauthorized' };
@@ -239,7 +239,7 @@ export async function createTerm(
  */
 export async function getTermById(
   id: string
-): Promise<{ success: true; data: Term & { academicYear: any; _count: any } } | { success: false; error: string }> {
+): Promise<{ success: true; data: TermWithRelations } | { success: false; error: string }> {
   try {
     const context = await getCurrentUser();
     if (!context) return { success: false, error: 'Unauthorized' };
@@ -281,7 +281,7 @@ export async function listTermsByAcademicYear(
  */
 export async function listTerms(
   status?: TermStatus
-): Promise<{ success: true; data: (Term & { academicYear: any })[] } | { success: false; error: string }> {
+): Promise<{ success: true; data: (Term & { academicYear: { id: string; name: string } })[] } | { success: false; error: string }> {
   try {
     const context = await getCurrentUser();
     if (!context) return { success: false, error: 'Unauthorized' };
