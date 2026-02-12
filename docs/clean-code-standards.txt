@@ -1,0 +1,926 @@
+Below is a Technical Architecture Document (TAD) for your multi-tenant School Management SaaS.
+
+This document defines how the system is built, how components interact, and how clean architecture, maintainability, and security are enforced.
+
+TECHNICAL ARCHITECTURE DOCUMENT (TAD)
+Product
+
+Multi-Tenant School Management SaaS (Zimbabwe Edition)
+
+Version
+
+v1.0
+
+1. Architecture Overview
+1.1 Architectural Style
+
+The system follows:
+
+Layered Architecture
+
+Domain-Oriented Service Layer
+
+Multi-Tenant Shared Database Model
+
+Role-Based Access Control (RBAC)
+
+Server-First Security Model
+
+1.2 High-Level Architecture
+Browser (Client)
+     ↓
+Next.js App (App Router)
+     ↓
+Server Actions / Route Handlers
+     ↓
+Service Layer (Domain Logic)
+     ↓
+Prisma ORM
+     ↓
+PostgreSQL (Shared DB)
+
+
+External Systems:
+
+Clerk (Authentication)
+
+Storage Provider (Cloudinary/Supabase)
+
+Vercel (Hosting)
+
+Monitoring (Sentry - optional)
+
+2. Core Architectural Principles
+
+Tenant isolation first
+
+No business logic in UI
+
+No direct DB calls from routes
+
+Strict TypeScript
+
+All access server-validated
+
+Transaction-safe critical flows
+
+Explicit authorization enforcement
+
+3. Multi-Tenant Architecture
+3.1 Tenancy Strategy
+
+Model:
+Shared database with logical isolation.
+
+All tenant-owned tables include:
+
+schoolId UUID NOT NULL
+
+
+Isolation is enforced at:
+
+Authentication context
+
+Service layer
+
+Query filters
+
+3.2 Tenant Resolution Flow
+
+User authenticates via Clerk
+
+System retrieves internal User record
+
+Extract:
+
+user.id
+
+user.schoolId
+
+user.role
+
+Attach to request context
+
+All services receive this context
+
+3.3 Tenant Isolation Rules
+
+schoolId NEVER accepted from client input
+
+All Prisma queries MUST include schoolId
+
+No global queries except SUPER_ADMIN routes
+
+Failure to follow this is a critical security defect.
+
+4. Application Layer Design
+4.1 Folder Structure
+/app
+   /s/[slug]
+      /dashboard
+      /students
+      /teachers
+      /academics
+      /finance
+   /platform
+
+/services
+   student.service.ts
+   enrollment.service.ts
+   academicYear.service.ts
+   finance.service.ts
+   auth.service.ts
+
+/lib
+   db.ts
+   auth.ts
+   permissions.ts
+   validators.ts
+
+/prisma
+   schema.prisma
+
+/types
+   domain.types.ts
+
+5. Layered Architecture
+5.1 UI Layer
+
+Responsibilities:
+
+Rendering
+
+Calling server actions
+
+No business logic
+
+No direct DB queries
+
+5.2 Route Layer (Server Actions / API Routes)
+
+Responsibilities:
+
+Authentication enforcement
+
+Input validation (Zod)
+
+Calling service methods
+
+Must NOT:
+
+Contain business logic
+
+Call Prisma directly
+
+5.3 Service Layer (Domain Logic)
+
+Responsibilities:
+
+Tenant isolation enforcement
+
+Authorization checks
+
+Business rules
+
+Transactions
+
+Audit logging
+
+Example:
+
+EnrollmentService.promoteStudents()
+FinanceService.recordPayment()
+
+
+This is the most important layer.
+
+5.4 Data Access Layer
+
+Prisma only accessed inside services.
+
+All queries must:
+
+Include schoolId
+
+Use indexed filters
+
+Avoid N+1 queries
+
+6. Authentication Architecture
+6.1 Clerk Integration
+
+Clerk handles:
+
+Login
+
+Registration
+
+Session tokens
+
+Application handles:
+
+Role
+
+School association
+
+Authorization
+
+6.2 Internal User Model
+
+Each Clerk user must map to internal:
+
+User {
+  clerkId
+  schoolId
+  role
+}
+
+
+Clerk identity ≠ authorization authority.
+
+7. Authorization Architecture
+7.1 Role-Based Access Control
+
+Centralized function:
+
+requireRole(user, allowedRoles)
+
+
+Never scatter role checks across codebase.
+
+7.2 Authorization Flow
+
+Authenticate
+
+Load user
+
+Validate role
+
+Validate tenant
+
+Execute service logic
+
+8. Database Architecture
+8.1 Core Entities
+
+Root:
+
+School
+
+Academic:
+
+AcademicYear
+
+Term
+
+Class
+
+Subject
+
+People:
+
+User
+
+Student
+
+Teacher
+
+Parent
+
+Lifecycle:
+
+Enrollment
+
+Operations:
+
+Exam
+
+Result
+
+Attendance
+
+Invoice
+
+Payment
+
+Platform:
+
+Subscription
+
+AuditLog
+
+8.2 Indexing Strategy
+
+Every tenant table:
+
+@@index([schoolId])
+
+
+Common composite indexes:
+
+@@index([schoolId, academicYearId])
+@@unique([studentId, academicYearId])
+
+8.3 Transactions
+
+Required for:
+
+Promotion
+
+Bulk enrollment
+
+Fee invoice generation
+
+Payment recording
+
+Use:
+
+prisma.$transaction()
+
+
+No multi-step writes without transaction.
+
+9. Promotion Engine Architecture
+
+Promotion flow:
+
+Validate role (ADMIN)
+
+Validate academic year status
+
+Lock term
+
+Close academic year
+
+Create next academic year
+
+Bulk create enrollments
+
+Mark previous enrollments COMPLETE
+
+Write audit log
+
+Wrapped inside single transaction.
+
+Failure → rollback.
+
+10. Finance Module Architecture
+10.1 Invoice Flow
+
+Admin defines fee structure
+
+System generates invoices per student
+
+Student payments applied to invoice
+
+Invoice status recalculated
+
+Statuses:
+
+PENDING
+
+PARTIAL
+
+PAID
+
+OVERDUE
+
+11. Security Architecture
+11.1 Server-Side Data Fetching
+
+All data fetching:
+
+Server components
+
+Server actions
+
+Never client-side direct DB
+
+11.2 Input Validation
+
+All routes validate using Zod:
+
+Required fields
+
+Type enforcement
+
+Length constraints
+
+Enum validation
+
+11.3 Common Security Controls
+
+CSRF protection (Clerk)
+
+Rate limiting login
+
+File size restrictions
+
+No raw SQL from user input
+
+Environment variables secured
+
+12. Audit Logging Architecture
+
+AuditLog table records:
+
+userId
+
+schoolId
+
+action
+
+entity
+
+entityId
+
+timestamp
+
+Critical events logged:
+
+Promotions
+
+Role changes
+
+Academic year changes
+
+Payments
+
+Student deletion
+
+13. Performance Architecture
+13.1 Query Design
+
+Pagination required on all list endpoints
+
+Avoid deep nested includes
+
+Use selective fields
+
+13.2 Scaling Plan
+
+Phase 1:
+
+Single DB
+
+Single deployment
+
+Phase 2:
+
+Read replicas
+
+Background job worker
+
+Phase 3:
+
+Redis caching
+
+Queue system for heavy reports
+
+14. Deployment Architecture
+
+Environment separation:
+
+Development
+
+Staging (optional)
+
+Production
+
+Deployment Pipeline:
+
+Code push
+
+CI checks
+
+Lint + type check
+
+Tests
+
+Prisma migrate
+
+Deploy to Vercel
+
+15. Error Handling Strategy
+
+All services must:
+
+Throw typed domain errors
+
+Not expose internal DB errors
+
+Return structured error responses
+
+Centralized error handler recommended.
+
+16. Observability
+
+Recommended:
+
+Sentry (error tracking)
+
+Database monitoring
+
+Logging middleware
+
+17. Code Quality Requirements
+
+TypeScript strict mode
+
+No implicit any
+
+No unused variables
+
+No business logic in UI
+
+Max function complexity limits
+
+Service methods < 200 lines
+
+18. Future Extensibility
+
+Designed to support:
+
+SMS module
+
+Timetable module
+
+Transport module
+
+Government reporting module
+
+Mobile app API reuse
+
+No major architectural rewrite required.
+
+19. Risk Mitigation
+Risk	Mitigation
+Cross-tenant leak	Strict schoolId enforcement
+Promotion failure	Transactions
+Role bypass	Centralized RBAC
+Code sprawl	Service layer architecture
+Scaling issues	Indexed DB design
+20. Architecture Summary
+
+This system is:
+
+Multi-tenant
+
+Role-based
+
+Service-oriented
+
+Transaction-safe
+
+Security-first
+
+Scalable
+
+Maintainable
+
+It separates:
+
+Identity
+Authorization
+Business logic
+Data access
+Platform logic
+
+Cleanly.
+
+If you want next, I can create:
+
+A detailed Milestone Development Roadmap
+
+A Security Checklist for Production Launch
+
+A Codebase Skeleton Blueprint
+
+Or a Database ERD specification ready for Prisma
+
+Tell me what you want to execute next.
+
+Define a clean coding standards guide
+
+Absolutely! Here’s a Clean Coding Standards Guide tailored for your multi-tenant School Management SaaS, emphasizing maintainability, security, scalability, and readability. This guide will help your codebase stay professional and consistent, especially as your team grows.
+
+CLEAN CODING STANDARDS GUIDE
+
+Project: Multi-Tenant School Management SaaS
+Scope: Frontend (Next.js) + Backend (Prisma/Postgres/Service Layer)
+Version: 1.0
+
+1. General Principles
+
+Readability over cleverness
+Code should communicate its intent clearly.
+
+Single Responsibility Principle (SRP)
+Functions, classes, and modules should do one thing only.
+
+DRY (Don’t Repeat Yourself)
+Reuse code via services, utilities, and components.
+
+KISS (Keep It Simple, Stupid)
+Avoid unnecessary abstractions.
+
+Explicit is better than implicit
+Use TypeScript types and enums; avoid any.
+
+Fail Fast
+Validate inputs and throw early on errors.
+
+Security First
+Never trust client input; always validate, sanitize, and enforce authorization server-side.
+
+2. Project Structure Standards
+/app             → Next.js App Router pages/components
+/services        → Business logic (transactional, domain logic)
+/lib             → Utilities, auth, DB, permission helpers
+/prisma          → Database schema
+/types           → Shared TypeScript interfaces/types/enums
+/middleware      → Authentication/authorization middleware
+/components      → UI components (dumb/presentational)
+
+
+Services must not depend on UI
+
+UI must not call Prisma directly
+
+Middleware must enforce tenant isolation and role access
+
+3. Naming Conventions
+3.1 Files
+
+camelCase for services and utilities
+Example: student.service.ts, auth.middleware.ts
+
+PascalCase for React components
+Example: StudentCard.tsx, AttendanceTable.tsx
+
+3.2 Variables
+
+camelCase for local variables, constants, and function parameters
+
+UPPER_SNAKE_CASE for environment variables and global constants
+
+Clear descriptive names; avoid x, data, tmp
+
+3.3 Functions / Methods
+
+Verb-based names
+Example: createStudent(), promoteStudents(), calculateFees()
+
+3.4 Classes
+
+PascalCase, singular noun
+Example: EnrollmentService, StudentController
+
+3.5 Database Models
+
+PascalCase singular
+Example: Student, AcademicYear, Invoice
+
+4. TypeScript Standards
+
+Strict Mode enabled in tsconfig.json
+
+No any except in temporary prototypes
+
+Use enums for fixed value fields
+Example:
+
+enum Role {
+  ADMIN,
+  TEACHER,
+  STUDENT
+}
+
+
+Interfaces over type aliases for domain models where possible
+
+Explicit return types for all functions
+
+Use readonly where mutation is not intended
+
+5. Service Layer Standards
+
+All business logic goes in /services
+
+No UI or route knowledge inside services
+
+Services receive a context object containing:
+
+userId
+
+schoolId
+
+role
+
+Enforce tenant isolation in every method
+
+Use transactions for critical flows (promotion, bulk enrollment, payments)
+
+Return domain-level objects; map to DTOs in routes if needed
+
+6. Route & API Standards
+
+Validate inputs with Zod schemas
+
+Use try/catch and map errors to structured responses
+
+Do not expose raw database errors to client
+
+Every route must:
+
+Authenticate user
+
+Validate role
+
+Enforce tenant isolation
+
+Call service layer
+
+Return structured response
+
+7. Frontend Standards
+
+Prefer Server Components for data-heavy pages
+
+Use Client Components only for interactivity
+
+State management:
+
+Prefer local state for small components
+
+Use global state or React Query for shared data
+
+Form handling:
+
+Use React Hook Form
+
+Validate with Zod
+
+UI components must be dumb/presentational
+
+Receive props only
+
+Emit events upwards
+
+CSS / styling:
+
+TailwindCSS with BEM-like class naming where necessary
+
+Avoid inline styles unless dynamic
+
+8. Database / Prisma Standards
+
+All tables must include schoolId (tenant key)
+
+Use @@index on frequent filters (schoolId, academicYearId)
+
+Use transactions for multi-step operations
+
+Soft deletes preferred (deletedAt)
+
+Composite unique constraints for student enrollments, results, etc.
+
+All relations explicit; avoid implicit relationName defaults
+
+9. Error Handling Standards
+
+Use typed domain errors
+Example:
+
+class ForbiddenError extends Error {}
+
+
+Service methods throw errors, route handlers catch and respond
+
+Never return raw DB errors to clients
+
+Centralized error middleware recommended
+
+10. Security Standards
+
+All data access server-side only
+
+Tenant isolation enforced in every query
+
+Role-based access enforced centralized
+
+Validate inputs with Zod
+
+Rate-limit sensitive endpoints (login, password reset)
+
+Hash sensitive data (passwords, tokens)
+
+Audit logs for critical actions:
+
+Promotion
+
+Role changes
+
+Fee payments
+
+Enrollment updates
+
+11. Testing Standards
+
+Unit tests for services (business logic)
+
+Integration tests for API endpoints
+
+Test tenant isolation rigorously
+
+Test promotion engine, enrollment, and finance flows
+
+Use CI/CD to enforce passing tests before deployment
+
+12. Code Formatting & Linting
+
+ESLint with TypeScript plugin
+
+Prettier for consistent formatting
+
+Commit hooks with husky to run lint + format
+
+Max function length: 50 lines
+
+Max file length: 300 lines
+
+One blank line between logical blocks
+
+Prefer early return to nested if-else
+
+13. Logging Standards
+
+Use structured logs
+
+Include:
+
+userId
+
+schoolId
+
+action
+
+timestamp
+
+Avoid sensitive data in logs
+
+Critical actions written to AuditLog table
+
+14. Documentation Standards
+
+Each service method: docstring with:
+
+Purpose
+
+Input
+
+Output
+
+Throws errors
+
+Each API route: docstring with:
+
+Purpose
+
+Params
+
+Return structure
+
+Permissions required
+
+Update documentation on schema changes
+
+15. Deployment / DevOps Guidelines
+
+Environment variables separated per environment
+
+Secrets never in repo
+
+Database migrations through Prisma
+
+Backups daily
+
+Monitoring (Sentry)
+
+CI pipeline: lint → test → build → deploy
+
+✅ Summary
+
+This guide ensures:
+
+Clean, maintainable code
+
+Strong security
+
+Tenant isolation by design
+
+Service-oriented architecture
+
+Scalable and extendable codebase
+
+By following this guide, your multi-tenant School Management SaaS will remain robust, safe, and professional as you onboard multiple schools.
