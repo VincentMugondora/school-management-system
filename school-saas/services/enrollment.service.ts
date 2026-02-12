@@ -541,6 +541,281 @@ export const EnrollmentService = {
   },
 
   /**
+   * Promote students to next academic year (transactional)
+   * @param data - Promotion data with student IDs and target class/academic year
+   * @param context - Service context with user info
+   * @returns Array of new enrollments
+   */
+  async promoteStudents(
+    data: {
+      studentIds: string[];
+      targetAcademicYearId: string;
+      targetClassId: string;
+      markPreviousAsCompleted?: boolean;
+    },
+    context: ServiceContext
+  ): Promise<Enrollment[]> {
+    requireAdmin(context);
+
+    if (!context.schoolId) {
+      throw new ForbiddenError('User must be associated with a school');
+    }
+
+    const { studentIds, targetAcademicYearId, targetClassId, markPreviousAsCompleted = true } = data;
+
+    if (studentIds.length === 0) {
+      throw new ValidationError('No students provided for promotion');
+    }
+
+    // Verify target academic year belongs to school
+    const academicYear = await prisma.academicYear.findFirst({
+      where: {
+        id: targetAcademicYearId,
+        schoolId: context.schoolId,
+      },
+    });
+
+    if (!academicYear) {
+      throw new NotFoundError('AcademicYear', targetAcademicYearId);
+    }
+
+    // Verify target class belongs to school and academic year
+    const classRecord = await prisma.class.findFirst({
+      where: {
+        id: targetClassId,
+        schoolId: context.schoolId,
+        academicYearId: targetAcademicYearId,
+      },
+    });
+
+    if (!classRecord) {
+      throw new NotFoundError('Class', targetClassId);
+    }
+
+    // Use transaction for atomic promotion
+    const newEnrollments = await prisma.$transaction(async (tx) => {
+      const results: Enrollment[] = [];
+
+      for (const studentId of studentIds) {
+        // Verify student belongs to school
+        const student = await tx.student.findFirst({
+          where: {
+            id: studentId,
+            schoolId: context.schoolId,
+            deletedAt: null,
+          },
+        });
+
+        if (!student) {
+          throw new NotFoundError('Student', studentId);
+        }
+
+        // Check if student already enrolled in target academic year
+        const existingEnrollment = await tx.enrollment.findFirst({
+          where: {
+            studentId,
+            academicYearId: targetAcademicYearId,
+            schoolId: context.schoolId,
+          },
+        });
+
+        if (existingEnrollment) {
+          throw new ConflictError(
+            `Student ${student.firstName} ${student.lastName} is already enrolled in this academic year`
+          );
+        }
+
+        // Mark previous enrollments as COMPLETED if requested
+        if (markPreviousAsCompleted) {
+          await tx.enrollment.updateMany({
+            where: {
+              studentId,
+              schoolId: context.schoolId,
+              status: EnrollmentStatus.ACTIVE,
+            },
+            data: { status: EnrollmentStatus.COMPLETED },
+          });
+        }
+
+        // Create new enrollment
+        const enrollment = await tx.enrollment.create({
+          data: {
+            studentId,
+            academicYearId: targetAcademicYearId,
+            classId: targetClassId,
+            schoolId: context.schoolId,
+            status: EnrollmentStatus.ACTIVE,
+          },
+        });
+
+        results.push(enrollment);
+      }
+
+      return results;
+    });
+
+    return newEnrollments;
+  },
+
+  /**
+   * Bulk create enrollments with validation
+   * @param data - Array of enrollment data
+   * @param context - Service context with user info
+   * @returns Array of created enrollments
+   */
+  async bulkCreateEnrollments(
+    data: {
+      studentId: string;
+      academicYearId: string;
+      classId: string;
+      status?: EnrollmentStatus;
+    }[],
+    context: ServiceContext
+  ): Promise<{ enrollments: Enrollment[]; errors: { studentId: string; error: string }[] }> {
+    requireAdmin(context);
+
+    if (!context.schoolId) {
+      throw new ForbiddenError('User must be associated with a school');
+    }
+
+    if (data.length === 0) {
+      throw new ValidationError('No enrollments provided');
+    }
+
+    const results: Enrollment[] = [];
+    const errors: { studentId: string; error: string }[] = [];
+
+    // Process in batches of 10 for better performance
+    const batchSize = 10;
+    for (let i = 0; i < data.length; i += batchSize) {
+      const batch = data.slice(i, i + batchSize);
+
+      await prisma.$transaction(async (tx) => {
+        for (const item of batch) {
+          try {
+            // Verify student belongs to school
+            const student = await tx.student.findFirst({
+              where: {
+                id: item.studentId,
+                schoolId: context.schoolId,
+                deletedAt: null,
+              },
+            });
+
+            if (!student) {
+              errors.push({ studentId: item.studentId, error: 'Student not found' });
+              continue;
+            }
+
+            // Verify academic year belongs to school
+            const academicYear = await tx.academicYear.findFirst({
+              where: {
+                id: item.academicYearId,
+                schoolId: context.schoolId,
+              },
+            });
+
+            if (!academicYear) {
+              errors.push({ studentId: item.studentId, error: 'Academic year not found' });
+              continue;
+            }
+
+            // Verify class belongs to school and academic year
+            const classRecord = await tx.class.findFirst({
+              where: {
+                id: item.classId,
+                schoolId: context.schoolId,
+                academicYearId: item.academicYearId,
+              },
+            });
+
+            if (!classRecord) {
+              errors.push({ studentId: item.studentId, error: 'Class not found' });
+              continue;
+            }
+
+            // Check if already enrolled
+            const existingEnrollment = await tx.enrollment.findFirst({
+              where: {
+                studentId: item.studentId,
+                academicYearId: item.academicYearId,
+                schoolId: context.schoolId,
+              },
+            });
+
+            if (existingEnrollment) {
+              errors.push({
+                studentId: item.studentId,
+                error: 'Already enrolled in this academic year',
+              });
+              continue;
+            }
+
+            // Create enrollment
+            const enrollment = await tx.enrollment.create({
+              data: {
+                studentId: item.studentId,
+                academicYearId: item.academicYearId,
+                classId: item.classId,
+                schoolId: context.schoolId,
+                status: item.status ?? EnrollmentStatus.ACTIVE,
+              },
+            });
+
+            results.push(enrollment);
+          } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            errors.push({ studentId: item.studentId, error: errorMessage });
+          }
+        }
+      });
+    }
+
+    return { enrollments: results, errors };
+  },
+
+  /**
+   * Mark previous enrollments as COMPLETED for a student
+   * @param studentId - Student ID
+   * @param context - Service context with user info
+   * @returns Count of updated enrollments
+   */
+  async markPreviousEnrollmentsAsCompleted(
+    studentId: string,
+    context: ServiceContext
+  ): Promise<number> {
+    requireAdmin(context);
+
+    if (!context.schoolId) {
+      throw new ForbiddenError('User must be associated with a school');
+    }
+
+    // Verify student belongs to school
+    const student = await prisma.student.findFirst({
+      where: {
+        id: studentId,
+        schoolId: context.schoolId,
+      },
+    });
+
+    if (!student) {
+      throw new NotFoundError('Student', studentId);
+    }
+
+    // Update all active enrollments to COMPLETED
+    const result = await prisma.enrollment.updateMany({
+      where: {
+        studentId,
+        schoolId: context.schoolId,
+        status: EnrollmentStatus.ACTIVE,
+      },
+      data: { status: EnrollmentStatus.COMPLETED },
+    });
+
+    return result.count;
+  },
+
+  /**
    * Delete enrollment
    * @param id - Enrollment ID
    * @param context - Service context with user info
