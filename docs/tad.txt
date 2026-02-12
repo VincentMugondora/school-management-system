@@ -1,0 +1,565 @@
+Below is a **Technical Architecture Document (TAD)** for your multi-tenant School Management SaaS.
+
+This document defines **how the system is built**, how components interact, and how clean architecture, maintainability, and security are enforced.
+
+---
+
+# TECHNICAL ARCHITECTURE DOCUMENT (TAD)
+
+## Product
+
+Multi-Tenant School Management SaaS (Zimbabwe Edition)
+
+## Version
+
+v1.0
+
+---
+
+# 1. Architecture Overview
+
+## 1.1 Architectural Style
+
+The system follows:
+
+* Layered Architecture
+* Domain-Oriented Service Layer
+* Multi-Tenant Shared Database Model
+* Role-Based Access Control (RBAC)
+* Server-First Security Model
+
+---
+
+## 1.2 High-Level Architecture
+
+```
+Browser (Client)
+     ↓
+Next.js App (App Router)
+     ↓
+Server Actions / Route Handlers
+     ↓
+Service Layer (Domain Logic)
+     ↓
+Prisma ORM
+     ↓
+PostgreSQL (Shared DB)
+```
+
+External Systems:
+
+* Clerk (Authentication)
+* Storage Provider (Cloudinary/Supabase)
+* Vercel (Hosting)
+* Monitoring (Sentry - optional)
+
+---
+
+# 2. Core Architectural Principles
+
+1. Tenant isolation first
+2. No business logic in UI
+3. No direct DB calls from routes
+4. Strict TypeScript
+5. All access server-validated
+6. Transaction-safe critical flows
+7. Explicit authorization enforcement
+
+---
+
+# 3. Multi-Tenant Architecture
+
+## 3.1 Tenancy Strategy
+
+Model:
+Shared database with logical isolation.
+
+All tenant-owned tables include:
+
+```
+schoolId UUID NOT NULL
+```
+
+Isolation is enforced at:
+
+* Authentication context
+* Service layer
+* Query filters
+
+---
+
+## 3.2 Tenant Resolution Flow
+
+1. User authenticates via Clerk
+2. System retrieves internal User record
+3. Extract:
+
+   * user.id
+   * user.schoolId
+   * user.role
+4. Attach to request context
+5. All services receive this context
+
+---
+
+## 3.3 Tenant Isolation Rules
+
+* schoolId NEVER accepted from client input
+* All Prisma queries MUST include schoolId
+* No global queries except SUPER_ADMIN routes
+
+Failure to follow this is a critical security defect.
+
+---
+
+# 4. Application Layer Design
+
+## 4.1 Folder Structure
+
+```
+/app
+   /s/[slug]
+      /dashboard
+      /students
+      /teachers
+      /academics
+      /finance
+   /platform
+
+/services
+   student.service.ts
+   enrollment.service.ts
+   academicYear.service.ts
+   finance.service.ts
+   auth.service.ts
+
+/lib
+   db.ts
+   auth.ts
+   permissions.ts
+   validators.ts
+
+/prisma
+   schema.prisma
+
+/types
+   domain.types.ts
+```
+
+---
+
+# 5. Layered Architecture
+
+## 5.1 UI Layer
+
+Responsibilities:
+
+* Rendering
+* Calling server actions
+* No business logic
+* No direct DB queries
+
+---
+
+## 5.2 Route Layer (Server Actions / API Routes)
+
+Responsibilities:
+
+* Authentication enforcement
+* Input validation (Zod)
+* Calling service methods
+
+Must NOT:
+
+* Contain business logic
+* Call Prisma directly
+
+---
+
+## 5.3 Service Layer (Domain Logic)
+
+Responsibilities:
+
+* Tenant isolation enforcement
+* Authorization checks
+* Business rules
+* Transactions
+* Audit logging
+
+Example:
+
+```
+EnrollmentService.promoteStudents()
+FinanceService.recordPayment()
+```
+
+This is the most important layer.
+
+---
+
+## 5.4 Data Access Layer
+
+Prisma only accessed inside services.
+
+All queries must:
+
+* Include schoolId
+* Use indexed filters
+* Avoid N+1 queries
+
+---
+
+# 6. Authentication Architecture
+
+## 6.1 Clerk Integration
+
+Clerk handles:
+
+* Login
+* Registration
+* Session tokens
+
+Application handles:
+
+* Role
+* School association
+* Authorization
+
+---
+
+## 6.2 Internal User Model
+
+Each Clerk user must map to internal:
+
+```
+User {
+  clerkId
+  schoolId
+  role
+}
+```
+
+Clerk identity ≠ authorization authority.
+
+---
+
+# 7. Authorization Architecture
+
+## 7.1 Role-Based Access Control
+
+Centralized function:
+
+```
+requireRole(user, allowedRoles)
+```
+
+Never scatter role checks across codebase.
+
+---
+
+## 7.2 Authorization Flow
+
+1. Authenticate
+2. Load user
+3. Validate role
+4. Validate tenant
+5. Execute service logic
+
+---
+
+# 8. Database Architecture
+
+## 8.1 Core Entities
+
+Root:
+
+* School
+
+Academic:
+
+* AcademicYear
+* Term
+* Class
+* Subject
+
+People:
+
+* User
+* Student
+* Teacher
+* Parent
+
+Lifecycle:
+
+* Enrollment
+
+Operations:
+
+* Exam
+* Result
+* Attendance
+* Invoice
+* Payment
+
+Platform:
+
+* Subscription
+* AuditLog
+
+---
+
+## 8.2 Indexing Strategy
+
+Every tenant table:
+
+```
+@@index([schoolId])
+```
+
+Common composite indexes:
+
+```
+@@index([schoolId, academicYearId])
+@@unique([studentId, academicYearId])
+```
+
+---
+
+## 8.3 Transactions
+
+Required for:
+
+* Promotion
+* Bulk enrollment
+* Fee invoice generation
+* Payment recording
+
+Use:
+
+```
+prisma.$transaction()
+```
+
+No multi-step writes without transaction.
+
+---
+
+# 9. Promotion Engine Architecture
+
+Promotion flow:
+
+1. Validate role (ADMIN)
+2. Validate academic year status
+3. Lock term
+4. Close academic year
+5. Create next academic year
+6. Bulk create enrollments
+7. Mark previous enrollments COMPLETE
+8. Write audit log
+
+Wrapped inside single transaction.
+
+Failure → rollback.
+
+---
+
+# 10. Finance Module Architecture
+
+## 10.1 Invoice Flow
+
+1. Admin defines fee structure
+2. System generates invoices per student
+3. Student payments applied to invoice
+4. Invoice status recalculated
+
+Statuses:
+
+* PENDING
+* PARTIAL
+* PAID
+* OVERDUE
+
+---
+
+# 11. Security Architecture
+
+## 11.1 Server-Side Data Fetching
+
+All data fetching:
+
+* Server components
+* Server actions
+* Never client-side direct DB
+
+---
+
+## 11.2 Input Validation
+
+All routes validate using Zod:
+
+* Required fields
+* Type enforcement
+* Length constraints
+* Enum validation
+
+---
+
+## 11.3 Common Security Controls
+
+* CSRF protection (Clerk)
+* Rate limiting login
+* File size restrictions
+* No raw SQL from user input
+* Environment variables secured
+
+---
+
+# 12. Audit Logging Architecture
+
+AuditLog table records:
+
+* userId
+* schoolId
+* action
+* entity
+* entityId
+* timestamp
+
+Critical events logged:
+
+* Promotions
+* Role changes
+* Academic year changes
+* Payments
+* Student deletion
+
+---
+
+# 13. Performance Architecture
+
+## 13.1 Query Design
+
+* Pagination required on all list endpoints
+* Avoid deep nested includes
+* Use selective fields
+
+---
+
+## 13.2 Scaling Plan
+
+Phase 1:
+
+* Single DB
+* Single deployment
+
+Phase 2:
+
+* Read replicas
+* Background job worker
+
+Phase 3:
+
+* Redis caching
+* Queue system for heavy reports
+
+---
+
+# 14. Deployment Architecture
+
+Environment separation:
+
+* Development
+* Staging (optional)
+* Production
+
+Deployment Pipeline:
+
+1. Code push
+2. CI checks
+3. Lint + type check
+4. Tests
+5. Prisma migrate
+6. Deploy to Vercel
+
+---
+
+# 15. Error Handling Strategy
+
+All services must:
+
+* Throw typed domain errors
+* Not expose internal DB errors
+* Return structured error responses
+
+Centralized error handler recommended.
+
+---
+
+# 16. Observability
+
+Recommended:
+
+* Sentry (error tracking)
+* Database monitoring
+* Logging middleware
+
+---
+
+# 17. Code Quality Requirements
+
+* TypeScript strict mode
+* No implicit any
+* No unused variables
+* No business logic in UI
+* Max function complexity limits
+* Service methods < 200 lines
+
+---
+
+# 18. Future Extensibility
+
+Designed to support:
+
+* SMS module
+* Timetable module
+* Transport module
+* Government reporting module
+* Mobile app API reuse
+
+No major architectural rewrite required.
+
+---
+
+# 19. Risk Mitigation
+
+| Risk              | Mitigation                  |
+| ----------------- | --------------------------- |
+| Cross-tenant leak | Strict schoolId enforcement |
+| Promotion failure | Transactions                |
+| Role bypass       | Centralized RBAC            |
+| Code sprawl       | Service layer architecture  |
+| Scaling issues    | Indexed DB design           |
+
+---
+
+# 20. Architecture Summary
+
+This system is:
+
+* Multi-tenant
+* Role-based
+* Service-oriented
+* Transaction-safe
+* Security-first
+* Scalable
+* Maintainable
+
+It separates:
+
+Identity
+Authorization
+Business logic
+Data access
+Platform logic
+
+Cleanly.
