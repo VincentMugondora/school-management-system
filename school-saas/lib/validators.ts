@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { SchoolStatus, AcademicYearStatus, TermStatus, Gender, EnrollmentStatus, Role } from '@prisma/client';
+import { SchoolStatus, AcademicYearStatus, TermStatus, Gender, EnrollmentStatus, Role, InvoiceStatus } from '@prisma/client';
 
 // ============================================
 // SCHOOL VALIDATION SCHEMAS
@@ -514,6 +514,47 @@ export const bulkUpdateAttendanceSchema = z.object({
 });
 
 export const attendanceIdSchema = z.string().uuid('Invalid attendance ID');
+
+// ============================================
+// INVOICE VALIDATION SCHEMAS
+// ============================================
+
+export const generateInvoicesSchema = z.object({
+  enrollmentIds: z.array(z.string().uuid('Invalid enrollment ID')).min(1, 'At least one enrollment is required'),
+  termId: z.string().uuid('Invalid term ID'),
+  amount: z.number().positive('Amount must be greater than 0'),
+  dueDate: z.coerce.date().optional(),
+});
+
+export const createInvoiceSchema = z.object({
+  studentId: z.string().uuid('Invalid student ID'),
+  enrollmentId: z.string().uuid('Invalid enrollment ID'),
+  termId: z.string().uuid('Invalid term ID'),
+  amount: z.number().positive('Amount must be greater than 0'),
+  dueDate: z.coerce.date().optional(),
+});
+
+export const updateInvoiceSchema = z.object({
+  status: z.nativeEnum(InvoiceStatus).optional(),
+  dueDate: z.coerce.date().optional().nullable(),
+});
+
+export const invoiceIdSchema = z.string().uuid('Invalid invoice ID');
+
+// ============================================
+// PAYMENT VALIDATION SCHEMAS
+// ============================================
+
+export const applyPaymentSchema = z.object({
+  invoiceId: z.string().uuid('Invalid invoice ID'),
+  amount: z.number().positive('Payment amount must be greater than 0'),
+  method: z.string().max(50).optional(),
+  reference: z.string().max(100).optional(),
+  notes: z.string().max(255).optional(),
+  paymentDate: z.coerce.date().optional(),
+});
+
+export const paymentIdSchema = z.string().uuid('Invalid payment ID');
 
 // ============================================
 // TYPE INFERENCE
