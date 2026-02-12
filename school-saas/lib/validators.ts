@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { SchoolStatus } from '@prisma/client';
+import { SchoolStatus, AcademicYearStatus, TermStatus } from '@prisma/client';
 
 // ============================================
 // SCHOOL VALIDATION SCHEMAS
@@ -79,9 +79,74 @@ export const schoolFilterSchema = z.object({
 export const schoolIdSchema = z.string().uuid('Invalid school ID');
 
 // ============================================
+// ACADEMIC YEAR VALIDATION SCHEMAS
+// ============================================
+
+export const createAcademicYearSchema = z.object({
+  name: z
+    .string()
+    .min(2, 'Academic year name must be at least 2 characters')
+    .max(100, 'Academic year name must not exceed 100 characters')
+    .transform(val => val.trim()),
+  startDate: z.coerce.date(),
+  endDate: z.coerce.date(),
+  isCurrent: z.boolean().optional().default(false),
+});
+
+export const updateAcademicYearSchema = z.object({
+  name: z
+    .string()
+    .min(2, 'Academic year name must be at least 2 characters')
+    .max(100, 'Academic year name must not exceed 100 characters')
+    .optional()
+    .transform(val => val?.trim()),
+  startDate: z.coerce.date().optional(),
+  endDate: z.coerce.date().optional(),
+  isCurrent: z.boolean().optional(),
+  status: z.nativeEnum(AcademicYearStatus).optional(),
+});
+
+export const academicYearIdSchema = z.string().uuid('Invalid academic year ID');
+
+// ============================================
+// TERM VALIDATION SCHEMAS
+// ============================================
+
+export const createTermSchema = z.object({
+  academicYearId: z.string().uuid('Invalid academic year ID'),
+  name: z
+    .string()
+    .min(1, 'Term name is required')
+    .max(50, 'Term name must not exceed 50 characters')
+    .transform(val => val.trim()),
+  startDate: z.coerce.date(),
+  endDate: z.coerce.date(),
+});
+
+export const updateTermSchema = z.object({
+  name: z
+    .string()
+    .min(1, 'Term name is required')
+    .max(50, 'Term name must not exceed 50 characters')
+    .optional()
+    .transform(val => val?.trim()),
+  startDate: z.coerce.date().optional(),
+  endDate: z.coerce.date().optional(),
+  status: z.nativeEnum(TermStatus).optional(),
+});
+
+export const termIdSchema = z.string().uuid('Invalid term ID');
+
+// ============================================
 // TYPE INFERENCE
 // ============================================
 
 export type CreateSchoolInput = z.infer<typeof createSchoolSchema>;
 export type UpdateSchoolInput = z.infer<typeof updateSchoolSchema>;
 export type SchoolFilterInput = z.infer<typeof schoolFilterSchema>;
+
+export type CreateAcademicYearInput = z.infer<typeof createAcademicYearSchema>;
+export type UpdateAcademicYearInput = z.infer<typeof updateAcademicYearSchema>;
+
+export type CreateTermInput = z.infer<typeof createTermSchema>;
+export type UpdateTermInput = z.infer<typeof updateTermSchema>;
