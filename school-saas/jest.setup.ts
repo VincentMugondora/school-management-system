@@ -1,56 +1,63 @@
 import '@testing-library/jest-dom';
 
-// Mock Prisma
-jest.mock('@/lib/db', () => ({
-  prisma: {
-    $transaction: jest.fn((callback) => callback(prisma)),
-    student: {
-      findFirst: jest.fn(),
-      findMany: jest.fn(),
-      create: jest.fn(),
-      update: jest.fn(),
-      updateMany: jest.fn(),
-      delete: jest.fn(),
-      count: jest.fn(),
-    },
-    enrollment: {
-      findFirst: jest.fn(),
-      findMany: jest.fn(),
-      create: jest.fn(),
-      update: jest.fn(),
-      updateMany: jest.fn(),
-      delete: jest.fn(),
-    },
-    invoice: {
-      findFirst: jest.fn(),
-      findMany: jest.fn(),
-      create: jest.fn(),
-      update: jest.fn(),
-      updateMany: jest.fn(),
-      delete: jest.fn(),
-      count: jest.fn(),
-    },
-    payment: {
-      create: jest.fn(),
-      findMany: jest.fn(),
-    },
-    academicYear: {
-      findFirst: jest.fn(),
-      findMany: jest.fn(),
-    },
-    class: {
-      findFirst: jest.fn(),
-    },
-    term: {
-      findFirst: jest.fn(),
-    },
-    user: {
-      findFirst: jest.fn(),
-    },
-    teacher: {
-      findFirst: jest.fn(),
-    },
+// Factory function to create mock - avoids circular reference
+const createMockPrisma = () => ({
+  $transaction: jest.fn((callback: (tx: ReturnType<typeof createMockPrisma>) => unknown) => {
+    const mock = createMockPrisma();
+    return callback(mock);
+  }),
+  student: {
+    findFirst: jest.fn(),
+    findMany: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
+    updateMany: jest.fn(),
+    delete: jest.fn(),
+    count: jest.fn(),
   },
+  enrollment: {
+    findFirst: jest.fn(),
+    findMany: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
+    updateMany: jest.fn(),
+    delete: jest.fn(),
+  },
+  invoice: {
+    findFirst: jest.fn(),
+    findMany: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
+    updateMany: jest.fn(),
+    delete: jest.fn(),
+    count: jest.fn(),
+  },
+  payment: {
+    create: jest.fn(),
+    findMany: jest.fn(),
+  },
+  academicYear: {
+    findFirst: jest.fn(),
+    findMany: jest.fn(),
+  },
+  class: {
+    findFirst: jest.fn(),
+  },
+  term: {
+    findFirst: jest.fn(),
+  },
+  user: {
+    findFirst: jest.fn(),
+  },
+  teacher: {
+    findFirst: jest.fn(),
+  },
+});
+
+const mockPrisma = createMockPrisma();
+
+jest.mock('@/lib/db', () => ({
+  prisma: mockPrisma,
 }));
 
 // Mock console methods to reduce noise during tests
