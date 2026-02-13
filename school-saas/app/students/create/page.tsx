@@ -2,8 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Gender, Role } from '@prisma/client';
-import { getCurrentUserProfile } from '@/app/actions/user.actions';
+import { Gender } from '@prisma/client';
 import { createStudent } from '@/app/actions/student.actions';
 import Link from 'next/link';
 import {
@@ -52,18 +51,6 @@ export default function AddStudentPage() {
     setError(null);
 
     try {
-      const userResult = await getCurrentUserProfile();
-      if (!userResult.success || !userResult.data) {
-        setError('Unauthorized');
-        return;
-      }
-
-      const user = userResult.data;
-      if (user.role !== Role.ADMIN && user.role !== Role.SUPER_ADMIN) {
-        setError('Access Denied');
-        return;
-      }
-
       const result = await createStudent({
         firstName: formData.firstName,
         lastName: formData.lastName,
