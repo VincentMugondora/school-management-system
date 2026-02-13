@@ -1,5 +1,6 @@
 'use server';
 
+import { prisma } from '@/lib/db';
 import { TeacherService } from '@/services/teacher.service';
 import { ClassService } from '@/services/class.service';
 import { SubjectService } from '@/services/subject.service';
@@ -26,9 +27,26 @@ import { revalidatePath } from 'next/cache';
 // ============================================
 
 async function getCurrentUser(): Promise<ServiceContext | null> {
+  // Fetch or create the first available school from the database
+  let school = await prisma.school.findFirst({
+    where: { status: 'ACTIVE' },
+    orderBy: { createdAt: 'asc' },
+  });
+
+  // Auto-create a default school if none exists
+  if (!school) {
+    school = await prisma.school.create({
+      data: {
+        name: 'Default School',
+        slug: 'default-school',
+        status: 'ACTIVE',
+      },
+    });
+  }
+
   return {
     userId: 'mock-user-id',
-    schoolId: 'mock-school-id',
+    schoolId: school.id,
     role: Role.ADMIN,
   };
 }
