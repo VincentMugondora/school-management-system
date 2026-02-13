@@ -4,6 +4,7 @@ import { prisma } from '@/lib/db';
 import { TeacherService } from '@/services/teacher.service';
 import { ClassService } from '@/services/class.service';
 import { SubjectService } from '@/services/subject.service';
+import { createUser } from '@/app/actions/user.actions';
 import {
   createTeacherSchema,
   updateTeacherSchema,
@@ -70,13 +71,34 @@ function handleServiceError(error: unknown): { success: false; error: string } {
 // ============================================
 
 export async function createTeacher(
-  input: { userId: string; employeeId?: string }
+  input: { firstName: string; lastName: string; email: string; employeeId?: string; phone?: string; specialization?: string }
 ): Promise<{ success: true; data: Teacher } | { success: false; error: string }> {
   try {
     const context = await getCurrentUser();
-    if (!context) return { success: false, error: 'Unauthorized' };
+    if (!context || !context.schoolId) return { success: false, error: 'Unauthorized' };
 
-    const validation = createTeacherSchema.safeParse(input);
+    // First, create a User with TEACHER role
+    const userResult = await createUser({
+      clerkId: `teacher-${Date.now()}`, // Generate a unique clerkId
+      email: input.email,
+      firstName: input.firstName,
+      lastName: input.lastName,
+      role: Role.TEACHER,
+      schoolId: context.schoolId,
+    });
+
+    if (!userResult.success) {
+      return { success: false, error: `Failed to create user: ${userResult.error}` };
+    }
+
+    const userId = userResult.data.id;
+
+    // Now create the Teacher with the new userId
+    const validation = createTeacherSchema.safeParse({
+      userId,
+      employeeId: input.employeeId,
+    });
+    
     if (!validation.success) {
       return { success: false, error: validation.error.issues.map(i => i.message).join(', ') };
     }
