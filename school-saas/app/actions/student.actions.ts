@@ -1,5 +1,6 @@
 'use server';
 
+import { prisma } from '@/lib/db';
 import { StudentService } from '@/services/student.service';
 import { EnrollmentService } from '@/services/enrollment.service';
 import {
@@ -25,9 +26,19 @@ import { revalidatePath } from 'next/cache';
 
 async function getCurrentUser(): Promise<ServiceContext | null> {
   // TODO: Replace with actual Clerk authentication
+  // Fetch the first available school from the database
+  const school = await prisma.school.findFirst({
+    where: { status: 'ACTIVE' },
+    orderBy: { createdAt: 'asc' },
+  });
+
+  if (!school) {
+    return null;
+  }
+
   return {
     userId: 'mock-user-id',
-    schoolId: 'mock-school-id',
+    schoolId: school.id,
     role: Role.ADMIN,
   };
 }
