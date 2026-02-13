@@ -258,13 +258,49 @@ export async function getTeacherDashboard(): Promise<
 // ============================================
 
 export async function createClass(
-  input: { name: string; grade: string; stream?: string; academicYearId: string; classTeacherId?: string }
+  input: { name: string; grade: string; stream?: string; academicYearId?: string; classTeacherId?: string }
 ): Promise<{ success: true; data: Class } | { success: false; error: string }> {
   try {
     const context = await getCurrentUser();
-    if (!context) return { success: false, error: 'Unauthorized' };
+    if (!context || !context.schoolId) return { success: false, error: 'Unauthorized' };
 
-    const validation = createClassSchema.safeParse(input);
+    // Auto-create academic year if not provided
+    let academicYearId = input.academicYearId;
+    if (!academicYearId) {
+      const currentYear = new Date().getFullYear();
+      const yearName = `${currentYear}-${currentYear + 1}`;
+      
+      let academicYear = await prisma.academicYear.findFirst({
+        where: { 
+          schoolId: context.schoolId,
+          name: yearName,
+        },
+      });
+      
+      if (!academicYear) {
+        academicYear = await prisma.academicYear.create({
+          data: {
+            name: yearName,
+            startDate: new Date(`${currentYear}-09-01`),
+            endDate: new Date(`${currentYear + 1}-08-31`),
+            schoolId: context.schoolId!,
+            isCurrent: true,
+          },
+        });
+      }
+      
+      academicYearId = academicYear.id;
+    }
+
+    const classData = {
+      name: input.name,
+      grade: input.grade,
+      stream: input.stream,
+      academicYearId,
+      classTeacherId: input.classTeacherId,
+    };
+
+    const validation = createClassSchema.safeParse(classData);
     if (!validation.success) {
       return { success: false, error: validation.error.issues.map(i => i.message).join(', ') };
     }
