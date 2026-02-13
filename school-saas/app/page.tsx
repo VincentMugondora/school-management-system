@@ -1,4 +1,4 @@
-import { SignInButton, SignUpButton, SignedIn, SignedOut } from '@clerk/nextjs';
+import { SignedIn, SignedOut } from '@clerk/nextjs';
 import Link from 'next/link';
 
 export default function Home() {
@@ -10,16 +10,18 @@ export default function Home() {
           <h1 className="text-2xl font-bold text-indigo-600">SchoolSaaS</h1>
           <div className="flex gap-4">
             <SignedOut>
-              <SignInButton mode="modal">
-                <button className="rounded-lg px-4 py-2 text-gray-600 hover:text-gray-900">
-                  Sign In
-                </button>
-              </SignInButton>
-              <SignUpButton mode="modal">
-                <button className="rounded-lg bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700">
-                  Get Started
-                </button>
-              </SignUpButton>
+              <Link
+                href="/sign-in"
+                className="rounded-lg px-4 py-2 text-gray-600 hover:text-gray-900"
+              >
+                Sign In
+              </Link>
+              <Link
+                href="/sign-up"
+                className="rounded-lg bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700"
+              >
+                Get Started
+              </Link>
             </SignedOut>
             <SignedIn>
               <Link
@@ -46,16 +48,18 @@ export default function Home() {
           </p>
           <div className="mt-10 flex justify-center gap-4">
             <SignedOut>
-              <SignUpButton mode="modal">
-                <button className="rounded-lg bg-indigo-600 px-8 py-3 text-lg font-semibold text-white hover:bg-indigo-700">
-                  Start Free Trial
-                </button>
-              </SignUpButton>
-              <SignInButton mode="modal">
-                <button className="rounded-lg border-2 border-gray-300 px-8 py-3 text-lg font-semibold text-gray-700 hover:border-gray-400">
-                  Sign In
-                </button>
-              </SignInButton>
+              <Link
+                href="/sign-up"
+                className="rounded-lg bg-indigo-600 px-8 py-3 text-lg font-semibold text-white hover:bg-indigo-700"
+              >
+                Start Free Trial
+              </Link>
+              <Link
+                href="/sign-in"
+                className="rounded-lg border-2 border-gray-300 px-8 py-3 text-lg font-semibold text-gray-700 hover:border-gray-400"
+              >
+                Sign In
+              </Link>
             </SignedOut>
             <SignedIn>
               <Link
