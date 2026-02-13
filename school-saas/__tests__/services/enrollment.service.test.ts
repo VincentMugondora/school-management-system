@@ -284,7 +284,7 @@ describe('EnrollmentService - Unit Tests', () => {
 
   describe('markPreviousEnrollmentsAsCompleted', () => {
     it('should mark all active enrollments as completed', async () => {
-      const mockStudent = { id: 'student-1', schoolId: 'school-1' };
+      const mockStudent = { id: 'student-1', schoolId: 'mock-school-id' };
 
       (prisma.student.findFirst as jest.Mock).mockResolvedValue(mockStudent);
       (prisma.enrollment.updateMany as jest.Mock).mockResolvedValue({ count: 2 });
@@ -298,7 +298,7 @@ describe('EnrollmentService - Unit Tests', () => {
       expect(prisma.enrollment.updateMany).toHaveBeenCalledWith({
         where: {
           studentId: 'student-1',
-          schoolId: 'school-1',
+          schoolId: 'mock-school-id',
           status: EnrollmentStatus.ACTIVE,
         },
         data: { status: EnrollmentStatus.COMPLETE },
