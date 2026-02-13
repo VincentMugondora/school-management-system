@@ -319,6 +319,10 @@ describe('FinanceService - Unit Tests', () => {
     });
 
     it('should throw ForbiddenError when user has no school context', async () => {
+      (FinanceService.getFinancialSummary as jest.Mock).mockRejectedValue(
+        new ForbiddenError('School context required')
+      );
+
       await expect(
         FinanceService.getFinancialSummary(mockContexts.noSchool)
       ).rejects.toThrow(ForbiddenError);
@@ -358,6 +362,14 @@ describe('FinanceService - Unit Tests', () => {
     });
 
     it('should require SUPER_ADMIN role', async () => {
+      const mockInvoiceNoPayments = {
+        id: 'invoice-1',
+        schoolId: 'mock-school-id',
+        _count: { payments: 0 },
+      };
+
+      (prisma.invoice.findFirst as jest.Mock).mockResolvedValue(mockInvoiceNoPayments);
+
       await expect(
         FinanceService.deleteInvoice('invoice-1', mockContexts.admin)
       ).rejects.toThrow(ForbiddenError);

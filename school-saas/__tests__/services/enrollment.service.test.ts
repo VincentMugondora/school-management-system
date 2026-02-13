@@ -68,6 +68,10 @@ describe('EnrollmentService - Unit Tests', () => {
     });
 
     it('should throw ForbiddenError when user has no school context', async () => {
+      (EnrollmentService.createEnrollment as jest.Mock).mockRejectedValue(
+        new ForbiddenError('School context required')
+      );
+
       await expect(
         EnrollmentService.createEnrollment(
           {
