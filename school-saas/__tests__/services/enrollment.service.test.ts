@@ -301,7 +301,7 @@ describe('EnrollmentService - Unit Tests', () => {
           schoolId: 'school-1',
           status: EnrollmentStatus.ACTIVE,
         },
-        data: { status: EnrollmentStatus.COMPLETED },
+        data: { status: EnrollmentStatus.COMPLETE },
       });
     });
 

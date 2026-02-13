@@ -534,7 +534,7 @@ export const EnrollmentService = {
 
     const completedEnrollment = await prisma.enrollment.update({
       where: { id },
-      data: { status: EnrollmentStatus.COMPLETED },
+      data: { status: EnrollmentStatus.COMPLETE },
     });
 
     return completedEnrollment;
@@ -625,7 +625,7 @@ export const EnrollmentService = {
           );
         }
 
-        // Mark previous enrollments as COMPLETED if requested
+        // Mark previous enrollments as COMPLETE if requested
         if (markPreviousAsCompleted) {
           await tx.enrollment.updateMany({
             where: {
@@ -633,7 +633,7 @@ export const EnrollmentService = {
               schoolId: context.schoolId,
               status: EnrollmentStatus.ACTIVE,
             },
-            data: { status: EnrollmentStatus.COMPLETED },
+            data: { status: EnrollmentStatus.COMPLETE },
           });
         }
 
@@ -775,7 +775,7 @@ export const EnrollmentService = {
   },
 
   /**
-   * Mark previous enrollments as COMPLETED for a student
+   * Mark previous enrollments as COMPLETE for a student
    * @param studentId - Student ID
    * @param context - Service context with user info
    * @returns Count of updated enrollments
@@ -802,14 +802,14 @@ export const EnrollmentService = {
       throw new NotFoundError('Student', studentId);
     }
 
-    // Update all active enrollments to COMPLETED
+    // Update all active enrollments to COMPLETE
     const result = await prisma.enrollment.updateMany({
       where: {
         studentId,
         schoolId: context.schoolId,
         status: EnrollmentStatus.ACTIVE,
       },
-      data: { status: EnrollmentStatus.COMPLETED },
+      data: { status: EnrollmentStatus.COMPLETE },
     });
 
     return result.count;
