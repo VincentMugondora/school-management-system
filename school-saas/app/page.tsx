@@ -1,65 +1,102 @@
-import Image from "next/image";
+import { SignInButton, SignUpButton, SignedIn, SignedOut } from '@clerk/nextjs';
+import Link from 'next/link';
 
 export default function Home() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <div className="flex min-h-screen flex-col">
+      {/* Navigation */}
+      <nav className="border-b bg-white px-6 py-4">
+        <div className="mx-auto flex max-w-7xl items-center justify-between">
+          <h1 className="text-2xl font-bold text-indigo-600">SchoolSaaS</h1>
+          <div className="flex gap-4">
+            <SignedOut>
+              <SignInButton mode="modal">
+                <button className="rounded-lg px-4 py-2 text-gray-600 hover:text-gray-900">
+                  Sign In
+                </button>
+              </SignInButton>
+              <SignUpButton mode="modal">
+                <button className="rounded-lg bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700">
+                  Get Started
+                </button>
+              </SignUpButton>
+            </SignedOut>
+            <SignedIn>
+              <Link
+                href="/dashboard"
+                className="rounded-lg bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700"
+              >
+                Dashboard
+              </Link>
+            </SignedIn>
+          </div>
+        </div>
+      </nav>
+
+      {/* Hero Section */}
+      <main className="flex-1">
+        <section className="mx-auto max-w-7xl px-6 py-24 text-center">
+          <h1 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-6xl">
+            School Management
+            <span className="text-indigo-600"> Simplified</span>
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+          <p className="mx-auto mt-6 max-w-2xl text-lg text-gray-600">
+            A complete multi-tenant school management system for administrators, teachers,
+            students, parents, and accountants.
           </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+          <div className="mt-10 flex justify-center gap-4">
+            <SignedOut>
+              <SignUpButton mode="modal">
+                <button className="rounded-lg bg-indigo-600 px-8 py-3 text-lg font-semibold text-white hover:bg-indigo-700">
+                  Start Free Trial
+                </button>
+              </SignUpButton>
+              <SignInButton mode="modal">
+                <button className="rounded-lg border-2 border-gray-300 px-8 py-3 text-lg font-semibold text-gray-700 hover:border-gray-400">
+                  Sign In
+                </button>
+              </SignInButton>
+            </SignedOut>
+            <SignedIn>
+              <Link
+                href="/dashboard"
+                className="rounded-lg bg-indigo-600 px-8 py-3 text-lg font-semibold text-white hover:bg-indigo-700"
+              >
+                Go to Dashboard
+              </Link>
+            </SignedIn>
+          </div>
+        </section>
+
+        {/* Features */}
+        <section className="bg-gray-50 py-24">
+          <div className="mx-auto max-w-7xl px-6">
+            <h2 className="text-center text-3xl font-bold text-gray-900">
+              Everything you need
+            </h2>
+            <div className="mt-12 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+              {[
+                { title: 'Student Management', desc: 'Enrollments, records, and history' },
+                { title: 'Academic Structure', desc: 'Classes, subjects, and scheduling' },
+                { title: 'Exam & Results', desc: 'Grades and performance tracking' },
+                { title: 'Attendance', desc: 'Daily tracking and reports' },
+                { title: 'Finance', desc: 'Invoices, payments, and reports' },
+                { title: 'Multi-tenant', desc: 'Secure school isolation' },
+              ].map((feature) => (
+                <div key={feature.title} className="rounded-lg bg-white p-6 shadow-sm">
+                  <h3 className="text-lg font-semibold text-gray-900">{feature.title}</h3>
+                  <p className="mt-2 text-gray-600">{feature.desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
       </main>
+
+      {/* Footer */}
+      <footer className="border-t bg-white py-8 text-center text-gray-600">
+        <p>&copy; 2024 SchoolSaaS. All rights reserved.</p>
+      </footer>
     </div>
   );
 }
