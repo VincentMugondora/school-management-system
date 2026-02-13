@@ -26,14 +26,21 @@ import { revalidatePath } from 'next/cache';
 
 async function getCurrentUser(): Promise<ServiceContext | null> {
   // TODO: Replace with actual Clerk authentication
-  // Fetch the first available school from the database
-  const school = await prisma.school.findFirst({
+  // Fetch or create the first available school from the database
+  let school = await prisma.school.findFirst({
     where: { status: 'ACTIVE' },
     orderBy: { createdAt: 'asc' },
   });
 
+  // Auto-create a default school if none exists
   if (!school) {
-    return null;
+    school = await prisma.school.create({
+      data: {
+        name: 'Default School',
+        slug: 'default-school',
+        status: 'ACTIVE',
+      },
+    });
   }
 
   return {
