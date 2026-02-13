@@ -1,5 +1,6 @@
 'use server';
 
+import { prisma } from '@/lib/db';
 import { ExamService } from '@/services/exam.service';
 import { ResultService } from '@/services/result.service';
 import { AttendanceService } from '@/services/attendance.service';
@@ -24,10 +25,27 @@ import { revalidatePath } from 'next/cache';
 // ============================================
 
 async function getCurrentUser(): Promise<ServiceContext | null> {
+  // Fetch or create the first available school from the database
+  let school = await prisma.school.findFirst({
+    where: { status: 'ACTIVE' },
+    orderBy: { createdAt: 'asc' },
+  });
+
+  // Auto-create a default school if none exists
+  if (!school) {
+    school = await prisma.school.create({
+      data: {
+        name: 'Default School',
+        slug: 'default-school',
+        status: 'ACTIVE',
+      },
+    });
+  }
+
   return {
     userId: 'mock-user-id',
-    schoolId: 'mock-school-id',
-    role: Role.TEACHER,
+    schoolId: school.id,
+    role: Role.ADMIN,
   };
 }
 
@@ -50,13 +68,84 @@ function handleServiceError(error: unknown): { success: false; error: string } {
 // ============================================
 
 export async function createExam(
-  input: { name: string; maxMarks: number; examDate: Date; academicYearId: string; termId: string; classId: string; subjectId: string }
+  input: { name: string; subject: string; class: string; date: Date; maxMarks: number }
 ): Promise<{ success: true; data: Exam } | { success: false; error: string }> {
   try {
     const context = await getCurrentUser();
-    if (!context) return { success: false, error: 'Unauthorized' };
+    if (!context || !context.schoolId) return { success: false, error: 'Unauthorized' };
 
-    const validation = createExamSchema.safeParse(input);
+    // Find or create subject by name
+    let subject = await prisma.subject.findFirst({
+      where: { name: { contains: input.subject, mode: 'insensitive' } },
+    });
+    if (!subject) {
+      subject = await prisma.subject.create({
+        data: { name: input.subject },
+      });
+    }
+
+    // Find or create class by name
+    let classRecord = await prisma.class.findFirst({
+      where: { 
+        name: { contains: input.class, mode: 'insensitive' },
+        schoolId: context.schoolId,
+      },
+    });
+    if (!classRecord) {
+      // Get or create academic year first
+      const currentYear = new Date().getFullYear();
+      const yearName = `${currentYear}-${currentYear + 1}`;
+      let academicYear = await prisma.academicYear.findFirst({
+        where: { schoolId: context.schoolId, name: yearName },
+      });
+      if (!academicYear) {
+        academicYear = await prisma.academicYear.create({
+          data: {
+            name: yearName,
+            startDate: new Date(`${currentYear}-09-01`),
+            endDate: new Date(`${currentYear + 1}-08-31`),
+            schoolId: context.schoolId,
+            isCurrent: true,
+          },
+        });
+      }
+      
+      classRecord = await prisma.class.create({
+        data: {
+          name: input.class,
+          grade: input.class.replace(/\D/g, '') || '10',
+          academicYearId: academicYear.id,
+          schoolId: context.schoolId,
+        },
+      });
+    }
+
+    // Get or create term
+    let term = await prisma.term.findFirst({
+      where: { academicYearId: classRecord.academicYearId },
+    });
+    if (!term) {
+      term = await prisma.term.create({
+        data: {
+          name: 'Term 1',
+          academicYearId: classRecord.academicYearId,
+          startDate: new Date(),
+          endDate: new Date(new Date().setMonth(new Date().getMonth() + 3)),
+        },
+      });
+    }
+
+    const examData = {
+      name: input.name,
+      maxMarks: input.maxMarks,
+      examDate: input.date,
+      academicYearId: classRecord.academicYearId,
+      termId: term.id,
+      classId: classRecord.id,
+      subjectId: subject.id,
+    };
+
+    const validation = createExamSchema.safeParse(examData);
     if (!validation.success) {
       return { success: false, error: validation.error.issues.map((i: { message: string }) => i.message).join(', ') };
     }
