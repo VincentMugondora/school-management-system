@@ -30,7 +30,7 @@ import { UserButton } from '@clerk/nextjs';
 
 const navItems = [
   { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard/admin', active: true },
-  { icon: Users, label: 'Students', href: '/students' },
+  { icon: Users, label: 'Students', href: '/dashboard/admin/students' },
   { icon: GraduationCap, label: 'Teachers', href: '/teachers' },
   { icon: BookOpen, label: 'Library', href: '/library' },
   { icon: Wallet, label: 'Account', href: '/dashboard/accountant' },
