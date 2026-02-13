@@ -30,6 +30,6 @@ export default async function DashboardPage() {
     case Role.ACCOUNTANT:
       redirect('/dashboard/accountant');
     default:
-      redirect('/');
+      redirect('/sign-in');
   }
 }
