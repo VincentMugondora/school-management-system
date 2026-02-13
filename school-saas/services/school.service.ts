@@ -1,4 +1,5 @@
-import { PrismaClient, School, SchoolStatus, Role } from '@prisma/client';
+import { School, SchoolStatus, Role } from '@prisma/client';
+import { prisma } from '@/lib/db';
 import {
   CreateSchoolInput,
   UpdateSchoolInput,
@@ -9,8 +10,6 @@ import {
   ValidationError,
   ConflictError,
 } from '@/types/domain.types';
-
-const prisma = new PrismaClient();
 
 // ============================================
 // AUTHORIZATION HELPERS
