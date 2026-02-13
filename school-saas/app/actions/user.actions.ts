@@ -1,5 +1,6 @@
 'use server';
 
+import { auth } from '@clerk/nextjs/server';
 import { UserService } from '@/services/user.service';
 import {
   createUserSchema,
@@ -12,17 +13,28 @@ import { User, Role } from '@prisma/client';
 import { ServiceContext, ServiceError } from '@/types/domain.types';
 import { requireRole, RoleGroups } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
+import { prisma } from '@/lib/db';
 
 // ============================================
-// MOCK AUTHENTICATION - Replace with Clerk when ready
+// AUTHENTICATION - Clerk
 // ============================================
 
 async function getCurrentUser(): Promise<ServiceContext | null> {
-  // TODO: Replace with actual Clerk authentication
+  const { userId } = await auth();
+  if (!userId) return null;
+
+  // Get user from database to get role and schoolId
+  const user = await prisma.user.findUnique({
+    where: { clerkId: userId },
+    select: { id: true, role: true, schoolId: true },
+  });
+
+  if (!user) return null;
+
   return {
-    userId: 'mock-user-id',
-    schoolId: 'mock-school-id',
-    role: Role.ADMIN,
+    userId: user.id,
+    role: user.role,
+    schoolId: user.schoolId || undefined,
   };
 }
 
