@@ -183,23 +183,6 @@ export default function AdminDashboard() {
             </Link>
           ))}
         </nav>
-
-        {/* Upgrade Card */}
-        <div className="p-4 mx-4 mb-4">
-          <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl p-4 text-white relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2"></div>
-            <div className="absolute bottom-0 left-0 w-16 h-16 bg-white/10 rounded-full translate-y-1/2 -translate-x-1/2"></div>
-            <div className="relative z-10">
-              <div className="flex items-center gap-2 mb-2">
-                <Star className="w-5 h-5 fill-yellow-300 text-yellow-300" />
-              </div>
-              <p className="text-sm mb-3">You are on the free plan. Upgrade to go Pro.</p>
-              <button className="w-full bg-white text-purple-600 py-2 rounded-lg text-sm font-semibold hover:bg-gray-100 transition-colors">
-                Upgrade
-              </button>
-            </div>
-          </div>
-        </div>
       </aside>
 
       {/* Main Content */}
