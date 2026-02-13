@@ -17,17 +17,9 @@ export default async function DashboardPage() {
     select: { role: true },
   });
 
-  // If user exists in Clerk but not in our database, show setup message
+  // If user exists in Clerk but not in our database, redirect to setup
   if (!user) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">Account Setup Required</h1>
-          <p className="text-gray-600 mb-6">Your account needs to be configured by an administrator.</p>
-          <Link href="/" className="text-indigo-600 hover:underline">Return to Home</Link>
-        </div>
-      </div>
-    );
+    redirect('/setup');
   }
 
   // Redirect based on role
