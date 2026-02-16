@@ -1,346 +1,208 @@
-'use client';
-
-import { useState, useEffect, useCallback } from 'react';
+import { Suspense } from 'react';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { listStudents, deleteStudent } from '@/app/actions/student.actions';
-import { Gender } from '@prisma/client';
-import {
-  Plus,
-  Search,
-  Filter,
-  ChevronLeft,
-  ChevronRight,
-  GraduationCap,
-  Eye,
-  Edit,
-  Trash2,
-  Upload,
-} from 'lucide-react';
+import { redirect } from 'next/navigation';
+import { auth } from '@clerk/nextjs/server';
+import { prisma } from '@/lib/db';
+import { Role, Gender } from '@prisma/client';
+import { StudentSearch } from './_components/StudentSearch';
+import { StudentFilters } from './_components/StudentFilters';
+import { StudentTable } from './_components/StudentTable';
+import { Pagination } from './_components/Pagination';
+import { Plus, Users } from 'lucide-react';
 
-interface Student {
-  id: string;
-  firstName: string;
-  lastName: string;
-  studentId: string | null;
-  gender: Gender | null;
-  email: string | null;
-  phone: string | null;
-  createdAt: Date;
-  parent: { user: { firstName: string; lastName: string; email: string } } | null;
-  _count: { enrollments: number };
+interface StudentsPageProps {
+  searchParams: {
+    search?: string;
+    gender?: Gender;
+    status?: string;
+    classId?: string;
+    page?: string;
+    limit?: string;
+  };
 }
 
-export default function StudentsPage() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
+async function getStudentsData(
+  schoolId: string,
+  searchParams: StudentsPageProps['searchParams']
+) {
+  const page = parseInt(searchParams.page || '1', 10);
+  const limit = parseInt(searchParams.limit || '20', 10);
+  const skip = (page - 1) * limit;
 
-  const [students, setStudents] = useState<Student[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(Number(searchParams.get('page')) || 1);
-  const [limit] = useState(20);
-  const [search, setSearch] = useState(searchParams.get('search') || '');
-  const [gender, setGender] = useState<Gender | ''>((searchParams.get('gender') as Gender) || '');
-  const [showFilters, setShowFilters] = useState(false);
-  const [actionLoading, setActionLoading] = useState<string | null>(null);
-
-  const fetchStudents = useCallback(async () => {
-    setLoading(true);
-    const result = await listStudents({
-      page,
-      limit,
-      search: search || undefined,
-      gender: gender || undefined,
-    });
-    if (result.success && result.data) {
-      setStudents(result.data.students as Student[]);
-      setTotal(result.data.total);
-    }
-    setLoading(false);
-  }, [page, limit, search, gender]);
-
-  useEffect(() => {
-    fetchStudents();
-  }, [fetchStudents]);
-
-  useEffect(() => {
-    const params = new URLSearchParams();
-    if (page > 1) params.set('page', page.toString());
-    if (search) params.set('search', search);
-    if (gender) params.set('gender', gender);
-    router.push(`/admin/students?${params.toString()}`, { scroll: false });
-  }, [page, search, gender, router]);
-
-  const totalPages = Math.ceil(total / limit);
-
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this student?')) return;
-    setActionLoading(id);
-    const result = await deleteStudent(id);
-    if (result.success) {
-      fetchStudents();
-    } else {
-      alert(result.error || 'Failed to delete student');
-    }
-    setActionLoading(null);
+  const where = {
+    schoolId,
+    deletedAt: null,
+    ...(searchParams.search && {
+      OR: [
+        { firstName: { contains: searchParams.search, mode: 'insensitive' as const } },
+        { lastName: { contains: searchParams.search, mode: 'insensitive' as const } },
+        { studentId: { contains: searchParams.search, mode: 'insensitive' as const } },
+      ],
+    }),
+    ...(searchParams.gender && { gender: searchParams.gender }),
+    ...(searchParams.classId && {
+      enrollments: {
+        some: {
+          classId: searchParams.classId,
+          status: 'ACTIVE',
+        },
+      },
+    }),
   };
 
-  const clearFilters = () => {
-    setSearch('');
-    setGender('');
-    setPage(1);
+  const [students, total, classes] = await Promise.all([
+    prisma.student.findMany({
+      where,
+      skip,
+      take: limit,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        parent: {
+          select: {
+            user: {
+              select: {
+                firstName: true,
+                lastName: true,
+                email: true,
+              },
+            },
+          },
+        },
+        enrollments: {
+          where: { status: 'ACTIVE' },
+          include: {
+            class: {
+              select: { id: true, name: true, grade: true },
+            },
+            academicYear: {
+              select: { id: true, name: true },
+            },
+          },
+        },
+        _count: {
+          select: { enrollments: true },
+        },
+      },
+    }),
+    prisma.student.count({ where }),
+    prisma.class.findMany({
+      where: { schoolId },
+      select: { id: true, name: true, grade: true },
+      orderBy: { grade: 'asc' },
+    }),
+  ]);
+
+  return {
+    students,
+    total,
+    page,
+    limit,
+    totalPages: Math.ceil(total / limit),
+    classes,
   };
+}
+
+export default async function StudentsPage({ searchParams }: StudentsPageProps) {
+  const session = await auth();
+
+  if (!session.userId) {
+    redirect('/sign-in');
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { clerkId: session.userId },
+    include: { school: true },
+  });
+
+  if (!user || (user.role !== Role.ADMIN && user.role !== Role.SUPER_ADMIN)) {
+    redirect('/unauthorized');
+  }
+
+  if (!user.schoolId) {
+    redirect('/no-school');
+  }
+
+  const data = await getStudentsData(user.schoolId, searchParams);
 
   return (
-    <div className="p-8">
-      <div className="flex items-center justify-between mb-8">
+    <div className="p-8 space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Students</h1>
-          <p className="text-gray-500 mt-1">Manage all students in your school</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <Link
-            href="/admin/students/import"
-            className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-          >
-            <Upload className="w-4 h-4" />
-            Import
-          </Link>
-          <Link
-            href="/admin/students/new"
-            className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            Add Student
-          </Link>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6">
-        <div className="flex items-center gap-4 flex-wrap">
-          <div className="flex-1 min-w-[300px] relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search by name, admission number, or email..."
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-                setPage(1);
-              }}
-              className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-            />
-          </div>
-          <button
-            onClick={() => setShowFilters(!showFilters)}
-            className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
-          >
-            <Filter className="w-4 h-4" />
-            Filters
-          </button>
-          {(search || gender) && (
-            <button onClick={clearFilters} className="text-sm text-purple-600 hover:text-purple-700">
-              Clear filters
-            </button>
-          )}
-        </div>
-
-        {showFilters && (
-          <div className="mt-4 pt-4 border-t border-gray-100 flex items-center gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Gender</label>
-              <select
-                value={gender}
-                onChange={(e) => {
-                  setGender(e.target.value as Gender);
-                  setPage(1);
-                }}
-                title="Filter by gender"
-                className="px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              >
-                <option value="">All Genders</option>
-                <option value="MALE">Male</option>
-                <option value="FEMALE">Female</option>
-                <option value="OTHER">Other</option>
-              </select>
-            </div>
-          </div>
-        )}
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-          <p className="text-sm text-gray-500">Total Students</p>
-          <p className="text-2xl font-bold text-gray-800">{total}</p>
-        </div>
-        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-          <p className="text-sm text-gray-500">Active Enrollments</p>
-          <p className="text-2xl font-bold text-green-600">
-            {students.filter((s) => s._count.enrollments > 0).length}
+          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+            <Users className="w-6 h-6" />
+            Students
+          </h1>
+          <p className="text-gray-500 mt-1">
+            Manage all students in your school
           </p>
         </div>
-        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-          <p className="text-sm text-gray-500">With Parent Info</p>
-          <p className="text-2xl font-bold text-blue-600">{students.filter((s) => s.parent).length}</p>
+        <Link
+          href="/admin/students/new"
+          className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+        >
+          <Plus className="w-4 h-4" />
+          Add Student
+        </Link>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
+          <p className="text-sm text-gray-500">Total Students</p>
+          <p className="text-2xl font-bold text-gray-900">{data.total}</p>
         </div>
-        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
+          <p className="text-sm text-gray-500">Active Enrollments</p>
+          <p className="text-2xl font-bold text-green-600">
+            {data.students.filter((s) => s.enrollments.length > 0).length}
+          </p>
+        </div>
+        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
+          <p className="text-sm text-gray-500">With Parent Info</p>
+          <p className="text-2xl font-bold text-blue-600">
+            {data.students.filter((s) => s.parent).length}
+          </p>
+        </div>
+        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
           <p className="text-sm text-gray-500">New This Month</p>
           <p className="text-2xl font-bold text-purple-600">
-            {students.filter((s) => {
+            {data.students.filter((s) => {
               const created = new Date(s.createdAt);
               const now = new Date();
-              return created.getMonth() === now.getMonth() && created.getFullYear() === now.getFullYear();
+              return (
+                created.getMonth() === now.getMonth() &&
+                created.getFullYear() === now.getFullYear()
+              );
             }).length}
           </p>
         </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <table className="w-full">
-          <thead className="bg-gray-50 border-b border-gray-100">
-            <tr>
-              <th className="px-6 py-4 text-left text-sm font-medium text-gray-700">Student</th>
-              <th className="px-6 py-4 text-left text-sm font-medium text-gray-700">Admission #</th>
-              <th className="px-6 py-4 text-left text-sm font-medium text-gray-700">Gender</th>
-              <th className="px-6 py-4 text-left text-sm font-medium text-gray-700">Contact</th>
-              <th className="px-6 py-4 text-left text-sm font-medium text-gray-700">Parent/Guardian</th>
-              <th className="px-6 py-4 text-left text-sm font-medium text-gray-700">Status</th>
-              <th className="px-6 py-4 text-left text-sm font-medium text-gray-700">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {loading ? (
-              <tr>
-                <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
-                  Loading students...
-                </td>
-              </tr>
-            ) : students.length === 0 ? (
-              <tr>
-                <td colSpan={7} className="px-6 py-12 text-center">
-                  <GraduationCap className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-700">No Students Found</h3>
-                  <p className="text-gray-500 mt-1">
-                    {search || gender ? 'Try adjusting your filters' : 'Add your first student to get started'}
-                  </p>
-                  {!search && !gender && (
-                    <Link
-                      href="/admin/students/new"
-                      className="inline-flex items-center gap-2 mt-4 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors"
-                    >
-                      <Plus className="w-4 h-4" />
-                      Add Student
-                    </Link>
-                  )}
-                </td>
-              </tr>
-            ) : (
-              students.map((student) => (
-                <tr key={student.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-                        <span className="text-sm font-medium text-purple-600">
-                          {student.firstName[0]}
-                          {student.lastName[0]}
-                        </span>
-                      </div>
-                      <div>
-                        <p className="font-medium text-gray-800">
-                          {student.firstName} {student.lastName}
-                        </p>
-                        {student.email && <p className="text-sm text-gray-500">{student.email}</p>}
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-600">{student.studentId || '-'}</td>
-                  <td className="px-6 py-4 text-sm text-gray-600">{student.gender || '-'}</td>
-                  <td className="px-6 py-4 text-sm text-gray-600">{student.phone || '-'}</td>
-                  <td className="px-6 py-4 text-sm text-gray-600">
-                    {student.parent ? (
-                      <div>
-                        <p>
-                          {student.parent.user.firstName} {student.parent.user.lastName}
-                        </p>
-                        <p className="text-xs text-gray-400">{student.parent.user.email}</p>
-                      </div>
-                    ) : (
-                      '-'
-                    )}
-                  </td>
-                  <td className="px-6 py-4">
-                    <span
-                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        student._count.enrollments > 0
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-yellow-100 text-yellow-800'
-                      }`}
-                    >
-                      {student._count.enrollments > 0 ? 'Enrolled' : 'Not Enrolled'}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-2">
-                      <Link
-                        href={`/admin/students/${student.id}`}
-                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                        title="View student"
-                      >
-                        <Eye className="w-4 h-4 text-gray-600" />
-                      </Link>
-                      <Link
-                        href={`/admin/students/${student.id}/edit`}
-                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                        title="Edit student"
-                      >
-                        <Edit className="w-4 h-4 text-blue-600" />
-                      </Link>
-                      <button
-                        onClick={() => handleDelete(student.id)}
-                        disabled={actionLoading === student.id}
-                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
-                        title="Delete student"
-                      >
-                        <Trash2 className="w-4 h-4 text-red-600" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-
-        {totalPages > 1 && (
-          <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between">
-            <p className="text-sm text-gray-500">
-              Showing {(page - 1) * limit + 1} to {Math.min(page * limit, total)} of {total} students
-            </p>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page === 1}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
-                title="Previous page"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-              <span className="text-sm text-gray-600">
-                Page {page} of {totalPages}
-              </span>
-              <button
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                disabled={page === totalPages}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
-                title="Next page"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        )}
+      {/* Search and Filters */}
+      <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200 space-y-4">
+        <StudentSearch initialSearch={searchParams.search} />
+        <StudentFilters
+          classes={data.classes}
+          initialFilters={{
+            gender: searchParams.gender,
+            classId: searchParams.classId,
+          }}
+        />
       </div>
+
+      {/* Table */}
+      <Suspense fallback={<div className="text-center py-8">Loading students...</div>}>
+        <StudentTable students={data.students} />
+      </Suspense>
+
+      {/* Pagination */}
+      <Pagination
+        currentPage={data.page}
+        totalPages={data.totalPages}
+        total={data.total}
+        limit={data.limit}
+      />
     </div>
   );
 }
