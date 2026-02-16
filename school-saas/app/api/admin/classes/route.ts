@@ -78,7 +78,7 @@ export async function POST(req: NextRequest) {
     if (!name || !name.trim()) {
       return NextResponse.json({ error: 'Class name is required' }, { status: 400 });
     }
-    if (!grade || !grade.trim()) {
+    if (!grade || !String(grade).trim()) {
       return NextResponse.json({ error: 'Grade/Level is required' }, { status: 400 });
     }
 
