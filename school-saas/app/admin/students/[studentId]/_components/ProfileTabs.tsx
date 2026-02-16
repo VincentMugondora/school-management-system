@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import {
   User,
@@ -28,7 +27,11 @@ const tabs = [
 export function ProfileTabs({ activeTab, onTabChange }: ProfileTabsProps) {
   return (
     <div className="border-b border-gray-200">
-      <nav className="flex space-x-1" aria-label="Student Profile Tabs">
+      <nav
+        className="flex space-x-1"
+        aria-label="Student Profile Tabs"
+        role="tablist"
+      >
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -45,7 +48,7 @@ export function ProfileTabs({ activeTab, onTabChange }: ProfileTabsProps) {
               )}
               aria-current={isActive ? 'page' : undefined}
               role="tab"
-              aria-selected={isActive}
+              aria-selected={isActive ? 'true' : 'false'}
             >
               <Icon className="w-4 h-4" />
               {tab.label}
