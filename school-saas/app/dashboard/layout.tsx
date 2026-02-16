@@ -28,7 +28,7 @@ export default async function DashboardLayout({
   // Fetch user from database to check role and school association
   const user = await prisma.user.findUnique({
     where: { clerkId: clerkUser.id },
-    select: { role: true, schoolId: true },
+    include: { school: { select: { name: true } } },
   });
 
   // If user not in DB, let them through (profile setup will handle it)
