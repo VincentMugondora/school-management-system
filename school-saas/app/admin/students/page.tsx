@@ -17,7 +17,7 @@ interface StudentsPageProps {
     status?: string;
     classId?: string;
     page?: string;
-    limit?: string;
+                  
   };
 }
 
