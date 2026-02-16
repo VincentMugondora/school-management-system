@@ -75,7 +75,7 @@ export const SchoolService = {
     }
 
     // Generate or validate slug
-    const slug = schoolData.slug
+    let slug = schoolData.slug
       ? this.validateAndNormalizeSlug(schoolData.slug)
       : this.generateSlug(schoolData.name);
 
@@ -101,14 +101,16 @@ export const SchoolService = {
       }
 
       // If auto-generated, try to append a number to make it unique
-      let uniqueSlug = slug;
       let attempt = 1;
       const maxAttempts = 10;
 
       while (attempt < maxAttempts) {
-        uniqueSlug = `${slug}-${attempt}`;
-        const check = await prisma.school.findUnique({ where: { slug: uniqueSlug } });
-        if (!check) break;
+        const candidateSlug = `${slug}-${attempt}`;
+        const check = await prisma.school.findUnique({ where: { slug: candidateSlug } });
+        if (!check) {
+          slug = candidateSlug;
+          break;
+        }
         attempt++;
       }
 
@@ -118,12 +120,10 @@ export const SchoolService = {
           'Too many schools with similar names exist. Please provide a custom slug.'
         );
       }
-
-      // Use the unique slug we found
-      // Note: Still need to check inside transaction for race conditions
     }
 
     // Execute atomic transaction: Create school + Link admin
+    // Note: Prisma's $transaction provides automatic rollback on error
     const result = await prisma.$transaction(async (tx) => {
       // Create the school
       const school = await tx.school.create({
