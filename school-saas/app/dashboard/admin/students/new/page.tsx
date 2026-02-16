@@ -123,23 +123,6 @@ export default function NewStudentPage() {
     }
   };
 
-  const Field = ({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) => (
-    <div>
-      <label className="block text-sm font-medium text-gray-700 mb-2">
-        {label} {required && <span className="text-red-500">*</span>}
-      </label>
-      {children}
-    </div>
-  );
-
-  const Input = (props: React.InputHTMLAttributes<HTMLInputElement>) => (
-    <input {...props} className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-100" />
-  );
-
-  const Select = (props: React.SelectHTMLAttributes<HTMLSelectElement>) => (
-    <select {...props} className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-100" />
-  );
-
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white px-6 py-4 border-b">
