@@ -98,7 +98,7 @@ export async function POST(req: NextRequest) {
     const newClass = await prisma.class.create({
       data: {
         name: name.trim(),
-        grade: grade.trim(),
+        grade: String(grade).trim(),
         stream: stream?.trim() || null,
         schoolId: user.schoolId,
         academicYearId: academicYear.id,
