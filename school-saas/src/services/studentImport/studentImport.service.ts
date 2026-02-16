@@ -321,7 +321,11 @@ export const StudentImportService = {
       where: { schoolId: context.schoolId },
       select: { studentId: true },
     });
-    existingStudents.forEach((s) => existingAdmissionNumbers.add(s.studentId));
+    existingStudents.forEach((s) => {
+      if (s.studentId) {
+        existingAdmissionNumbers.add(s.studentId);
+      }
+    });
 
     // Track admission numbers within this import batch
     const batchAdmissionNumbers = new Set<string>();
