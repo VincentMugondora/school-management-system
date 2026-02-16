@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/db';
 import Link from 'next/link';
-import { Plus, DollarSign, FileText, CreditCard, TrendingUp, AlertCircle } from 'lucide-react';
+import { Plus, FileText, CreditCard } from 'lucide-react';
 
 export default async function FinancePage() {
   const [invoices, payments, feeStructures] = await Promise.all([

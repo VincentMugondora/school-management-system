@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/db';
 import Link from 'next/link';
-import { Plus, Users, UserCog, ChevronRight, Mail, Phone } from 'lucide-react';
+import { Plus, Users, UserCog } from 'lucide-react';
 
 export default async function ParentsPage() {
   const parents = await prisma.parent.findMany({

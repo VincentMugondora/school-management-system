@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/db';
 import Link from 'next/link';
-import { Plus, FileText, Calendar, ChevronRight, CheckCircle, Clock } from 'lucide-react';
+import { Plus, FileText, Calendar, ChevronRight, CheckCircle } from 'lucide-react';
 
 export default async function ExamsPage() {
   const exams = await prisma.exam.findMany({
