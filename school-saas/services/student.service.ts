@@ -6,7 +6,6 @@ import {
   ForbiddenError,
   ConflictError,
 } from '@/types/domain.types';
-import { requireRole, RoleGroups } from '@/lib/auth';
 
 // ============================================
 // AUTHORIZATION HELPERS
@@ -468,6 +467,392 @@ export const StudentService = {
     await prisma.student.delete({
       where: { id },
     });
+  },
+
+  /**
+   * Get student academic history
+   * @param studentId - Student ID
+   * @param context - Service context
+   * @returns Academic history with enrollments
+   */
+  async getStudentAcademicHistory(
+    studentId: string,
+    context: ServiceContext
+  ): Promise<
+    Array<{
+      id: string;
+      status: string;
+      enrollmentDate: Date;
+      academicYear: { id: string; name: string };
+      class: { id: string; name: string; grade: number };
+      results: Array<{
+        id: string;
+        marks: number;
+        grade: string | null;
+        exam: { name: string; maxMarks: number; subject: { name: string } };
+      }>;
+    }>
+  > {
+    requireAdminOrAbove(context);
+
+    if (!context.schoolId) {
+      throw new ForbiddenError('User must be associated with a school');
+    }
+
+    const enrollments = await prisma.enrollment.findMany({
+      where: {
+        studentId,
+        schoolId: context.schoolId,
+      },
+      include: {
+        academicYear: { select: { id: true, name: true } },
+        class: { select: { id: true, name: true, grade: true } },
+        results: {
+          include: {
+            exam: {
+              select: {
+                name: true,
+                maxMarks: true,
+                subject: { select: { name: true } },
+              },
+            },
+          },
+          orderBy: { createdAt: 'desc' },
+        },
+      },
+      orderBy: { enrollmentDate: 'desc' },
+    });
+
+    return enrollments;
+  },
+
+  /**
+   * Get student attendance summary
+   * @param studentId - Student ID
+   * @param context - Service context
+   * @returns Attendance data grouped by term
+   */
+  async getStudentAttendance(
+    studentId: string,
+    context: ServiceContext
+  ): Promise<
+    Array<{
+      termId: string;
+      termName: string;
+      academicYearName: string;
+      totalDays: number;
+      presentDays: number;
+      absentDays: number;
+      percentage: number;
+    }>
+  > {
+    requireAdminOrAbove(context);
+
+    if (!context.schoolId) {
+      throw new ForbiddenError('User must be associated with a school');
+    }
+
+    const attendanceRecords = await prisma.attendance.findMany({
+      where: {
+        studentId,
+        schoolId: context.schoolId,
+      },
+      include: {
+        term: { select: { id: true, name: true, academicYear: { select: { name: true } } } },
+      },
+      orderBy: { date: 'desc' },
+    });
+
+    // Group by term
+    const grouped = attendanceRecords.reduce((acc, record) => {
+      const key = record.termId;
+      if (!acc[key]) {
+        acc[key] = {
+          termId: record.termId,
+          termName: record.term.name,
+          academicYearName: record.term.academicYear.name,
+          totalDays: 0,
+          presentDays: 0,
+          absentDays: 0,
+        };
+      }
+      acc[key].totalDays++;
+      if (record.isPresent) {
+        acc[key].presentDays++;
+      } else {
+        acc[key].absentDays++;
+      }
+      return acc;
+    }, {} as Record<string, { termId: string; termName: string; academicYearName: string; totalDays: number; presentDays: number; absentDays: number }>);
+
+    return Object.values(grouped).map((group) => ({
+      ...group,
+      percentage: Math.round((group.presentDays / group.totalDays) * 100) || 0,
+    }));
+  },
+
+  /**
+   * Get student results
+   * @param studentId - Student ID
+   * @param context - Service context
+   * @returns Results grouped by academic year and term
+   */
+  async getStudentResults(
+    studentId: string,
+    context: ServiceContext
+  ): Promise<
+    Array<{
+      id: string;
+      marks: number;
+      grade: string | null;
+      remarks: string | null;
+      exam: {
+        name: string;
+        maxMarks: number;
+        subject: { name: string };
+        term: { name: string; academicYear: { name: true } };
+      };
+    }>
+  > {
+    requireAdminOrAbove(context);
+
+    if (!context.schoolId) {
+      throw new ForbiddenError('User must be associated with a school');
+    }
+
+    const results = await prisma.result.findMany({
+      where: {
+        studentId,
+        schoolId: context.schoolId,
+      },
+      include: {
+        exam: {
+          include: {
+            subject: { select: { name: true } },
+            term: { select: { name: true, academicYear: { select: { name: true } } } },
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return results;
+  },
+
+  /**
+   * Get student fees overview
+   * @param studentId - Student ID
+   * @param context - Service context
+   * @returns Fee invoices with payments
+   */
+  async getStudentFees(
+    studentId: string,
+    context: ServiceContext
+  ): Promise<
+    Array<{
+      id: string;
+      amount: number;
+      paidAmount: number;
+      balance: number;
+      status: string;
+      dueDate: Date | null;
+      term: { name: string; academicYear: { name: string } };
+      payments: Array<{
+        id: string;
+        amount: number;
+        paymentMethod: string;
+        paymentDate: Date;
+      }>;
+    }>
+  > {
+    requireAdminOrAbove(context);
+
+    if (!context.schoolId) {
+      throw new ForbiddenError('User must be associated with a school');
+    }
+
+    const invoices = await prisma.invoice.findMany({
+      where: {
+        studentId,
+        schoolId: context.schoolId,
+      },
+      include: {
+        term: { select: { name: true, academicYear: { select: { name: true } } } },
+        payments: {
+          select: {
+            id: true,
+            amount: true,
+            paymentMethod: true,
+            paymentDate: true,
+          },
+          orderBy: { paymentDate: 'desc' },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return invoices;
+  },
+
+  /**
+   * Get student guardians
+   * @param studentId - Student ID
+   * @param context - Service context
+   * @returns Parent/guardian details
+   */
+  async getStudentGuardians(
+    studentId: string,
+    context: ServiceContext
+  ): Promise<
+    Array<{
+      id: string;
+      phone: string | null;
+      address: string | null;
+      user: {
+        firstName: string;
+        lastName: string;
+        email: string;
+        phone: string | null;
+      };
+    }>
+  > {
+    requireAdminOrAbove(context);
+
+    if (!context.schoolId) {
+      throw new ForbiddenError('User must be associated with a school');
+    }
+
+    const student = await prisma.student.findFirst({
+      where: {
+        id: studentId,
+        schoolId: context.schoolId,
+      },
+      include: {
+        parent: {
+          include: {
+            user: {
+              select: {
+                firstName: true,
+                lastName: true,
+                email: true,
+                phone: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!student?.parent) {
+      return [];
+    }
+
+    return [student.parent];
+  },
+
+  /**
+   * Suspend student (soft suspension by status update)
+   * @param studentId - Student ID
+   * @param reason - Suspension reason
+   * @param context - Service context
+   */
+  async suspendStudent(
+    studentId: string,
+    reason: string,
+    context: ServiceContext
+  ): Promise<void> {
+    requireAdmin(context);
+
+    if (!context.schoolId) {
+      throw new ForbiddenError('User must be associated with a school');
+    }
+
+    const student = await prisma.student.findFirst({
+      where: {
+        id: studentId,
+        schoolId: context.schoolId,
+        deletedAt: null,
+      },
+      include: {
+        enrollments: {
+          where: { status: 'ACTIVE' },
+        },
+      },
+    });
+
+    if (!student) {
+      throw new NotFoundError('Student', studentId);
+    }
+
+    // Update all active enrollments to DROPPED status
+    await prisma.enrollment.updateMany({
+      where: {
+        studentId,
+        status: 'ACTIVE',
+      },
+      data: {
+        status: 'DROPPED',
+      },
+    });
+  },
+
+  /**
+   * Reactivate suspended student
+   * @param studentId - Student ID
+   * @param classId - Class to enroll in
+   * @param academicYearId - Academic year
+   * @param context - Service context
+   */
+  async reactivateStudent(
+    studentId: string,
+    classId: string,
+    academicYearId: string,
+    context: ServiceContext
+  ): Promise<void> {
+    requireAdmin(context);
+
+    if (!context.schoolId) {
+      throw new ForbiddenError('User must be associated with a school');
+    }
+
+    const student = await prisma.student.findFirst({
+      where: {
+        id: studentId,
+        schoolId: context.schoolId,
+        deletedAt: null,
+      },
+    });
+
+    if (!student) {
+      throw new NotFoundError('Student', studentId);
+    }
+
+    // Check if enrollment already exists
+    const existingEnrollment = await prisma.enrollment.findFirst({
+      where: {
+        studentId,
+        academicYearId,
+      },
+    });
+
+    if (existingEnrollment) {
+      // Reactivate existing enrollment
+      await prisma.enrollment.update({
+        where: { id: existingEnrollment.id },
+        data: { status: 'ACTIVE', classId },
+      });
+    } else {
+      // Create new enrollment
+      await prisma.enrollment.create({
+        data: {
+          studentId,
+          classId,
+          academicYearId,
+          schoolId: context.schoolId,
+          status: 'ACTIVE',
+        },
+      });
+    }
   },
 };
 

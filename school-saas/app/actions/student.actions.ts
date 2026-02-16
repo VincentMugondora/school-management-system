@@ -509,3 +509,133 @@ export async function deleteEnrollment(
     return handleServiceError(error);
   }
 }
+
+// ============================================
+// STUDENT PROFILE TAB ACTIONS
+// ============================================
+
+/**
+ * Get student academic history
+ */
+export async function getStudentAcademicHistory(
+  studentId: string
+): Promise<{ success: true; data: Awaited<ReturnType<typeof StudentService.getStudentAcademicHistory>> } | { success: false; error: string }> {
+  try {
+    const context = await getCurrentUser();
+    if (!context) return { success: false, error: 'Unauthorized' };
+
+    const history = await StudentService.getStudentAcademicHistory(studentId, context);
+    return { success: true, data: history };
+  } catch (error) {
+    return handleServiceError(error);
+  }
+}
+
+/**
+ * Get student attendance summary
+ */
+export async function getStudentAttendance(
+  studentId: string
+): Promise<{ success: true; data: Awaited<ReturnType<typeof StudentService.getStudentAttendance>> } | { success: false; error: string }> {
+  try {
+    const context = await getCurrentUser();
+    if (!context) return { success: false, error: 'Unauthorized' };
+
+    const attendance = await StudentService.getStudentAttendance(studentId, context);
+    return { success: true, data: attendance };
+  } catch (error) {
+    return handleServiceError(error);
+  }
+}
+
+/**
+ * Get student results
+ */
+export async function getStudentResults(
+  studentId: string
+): Promise<{ success: true; data: Awaited<ReturnType<typeof StudentService.getStudentResults>> } | { success: false; error: string }> {
+  try {
+    const context = await getCurrentUser();
+    if (!context) return { success: false, error: 'Unauthorized' };
+
+    const results = await StudentService.getStudentResults(studentId, context);
+    return { success: true, data: results };
+  } catch (error) {
+    return handleServiceError(error);
+  }
+}
+
+/**
+ * Get student fees
+ */
+export async function getStudentFees(
+  studentId: string
+): Promise<{ success: true; data: Awaited<ReturnType<typeof StudentService.getStudentFees>> } | { success: false; error: string }> {
+  try {
+    const context = await getCurrentUser();
+    if (!context) return { success: false, error: 'Unauthorized' };
+
+    const fees = await StudentService.getStudentFees(studentId, context);
+    return { success: true, data: fees };
+  } catch (error) {
+    return handleServiceError(error);
+  }
+}
+
+/**
+ * Get student guardians
+ */
+export async function getStudentGuardians(
+  studentId: string
+): Promise<{ success: true; data: Awaited<ReturnType<typeof StudentService.getStudentGuardians>> } | { success: false; error: string }> {
+  try {
+    const context = await getCurrentUser();
+    if (!context) return { success: false, error: 'Unauthorized' };
+
+    const guardians = await StudentService.getStudentGuardians(studentId, context);
+    return { success: true, data: guardians };
+  } catch (error) {
+    return handleServiceError(error);
+  }
+}
+
+/**
+ * Suspend student
+ */
+export async function suspendStudent(
+  studentId: string,
+  reason: string
+): Promise<{ success: true } | { success: false; error: string }> {
+  try {
+    const context = await getCurrentUser();
+    if (!context) return { success: false, error: 'Unauthorized' };
+
+    await StudentService.suspendStudent(studentId, reason, context);
+    revalidatePath(`/admin/students/${studentId}`);
+    revalidatePath('/admin/students');
+    return { success: true };
+  } catch (error) {
+    return handleServiceError(error);
+  }
+}
+
+/**
+ * Reactivate student
+ */
+export async function reactivateStudent(
+  studentId: string,
+  classId: string,
+  academicYearId: string
+): Promise<{ success: true } | { success: false; error: string }> {
+  try {
+    const context = await getCurrentUser();
+    if (!context) return { success: false, error: 'Unauthorized' };
+
+    await StudentService.reactivateStudent(studentId, classId, academicYearId, context);
+    revalidatePath(`/admin/students/${studentId}`);
+    revalidatePath('/admin/students');
+    return { success: true };
+  } catch (error) {
+    return handleServiceError(error);
+  }
+}
