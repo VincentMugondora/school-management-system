@@ -431,6 +431,21 @@ export const EnrollmentService = {
       data: updateData,
     });
 
+    // Audit log enrollment update
+    await AuditService.logUpdate(
+      context,
+      'ENROLLMENT',
+      id,
+      {
+        classId: existingEnrollment.classId,
+        status: existingEnrollment.status,
+      },
+      {
+        classId: updatedEnrollment.classId,
+        status: updatedEnrollment.status,
+      }
+    );
+
     return updatedEnrollment;
   },
 
