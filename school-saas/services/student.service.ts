@@ -790,6 +790,22 @@ export const StudentService = {
         status: 'DROPPED',
       },
     });
+
+    // Audit log the suspension
+    await AuditService.logUpdate(
+      context,
+      'STUDENT',
+      studentId,
+      {
+        status: 'ACTIVE',
+        activeEnrollments: student.enrollments.length,
+      },
+      {
+        status: 'SUSPENDED',
+        activeEnrollments: 0,
+      },
+      { reason: `Student suspended: ${reason}` }
+    );
   },
 
   /**
@@ -837,9 +853,25 @@ export const StudentService = {
         where: { id: existingEnrollment.id },
         data: { status: 'ACTIVE', classId },
       });
+
+      // Audit log enrollment reactivation
+      await AuditService.logUpdate(
+        context,
+        'ENROLLMENT',
+        existingEnrollment.id,
+        {
+          status: existingEnrollment.status,
+          classId: existingEnrollment.classId,
+        },
+        {
+          status: 'ACTIVE',
+          classId,
+        },
+        { reason: 'Student reactivated - enrollment updated' }
+      );
     } else {
       // Create new enrollment
-      await prisma.enrollment.create({
+      const newEnrollment = await prisma.enrollment.create({
         data: {
           studentId,
           classId,
@@ -848,7 +880,37 @@ export const StudentService = {
           status: 'ACTIVE',
         },
       });
+
+      // Audit log new enrollment creation
+      await AuditService.logCreate(
+        context,
+        'ENROLLMENT',
+        newEnrollment.id,
+        {
+          studentId,
+          classId,
+          academicYearId,
+          status: 'ACTIVE',
+        },
+        { reason: 'Student reactivated - new enrollment created' }
+      );
     }
+
+    // Audit log student reactivation
+    await AuditService.logUpdate(
+      context,
+      'STUDENT',
+      studentId,
+      {
+        status: 'SUSPENDED',
+      },
+      {
+        status: 'ACTIVE',
+        classId,
+        academicYearId,
+      },
+      { reason: 'Student reactivated' }
+    );
   },
 };
 
