@@ -92,9 +92,10 @@ export default function AdminDashboard() {
       const userResult = await getCurrentUserProfile();
       if (userResult.success) {
         setUser(userResult.data);
-        // Set school name if available
-        if (userResult.data.schoolName) {
-          setSchoolName(userResult.data.schoolName);
+        // Set school name if available, fallback to 'SchooIi'
+        const schoolNameFromProfile = userResult.data.school?.name;
+        if (schoolNameFromProfile) {
+          setSchoolName(schoolNameFromProfile);
         }
       }
 
