@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuth } from '@clerk/nextjs/server';
-import { prisma } from '@/src/utils/prisma';
+import { prisma } from '@/lib/db';
 
 // GET /api/admin/classes - List all classes for the school
 export async function GET(req: NextRequest) {
