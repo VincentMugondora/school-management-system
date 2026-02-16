@@ -98,19 +98,7 @@ export const StudentService = {
   async getStudentById(
     id: string,
     context: ServiceContext
-  ): Promise<
-    | (Student & {
-        parent: { id: string; user: { firstName: string; lastName: string } } | null;
-        enrollments: {
-          id: string;
-          status: string;
-          academicYear: { name: string };
-          class: { name: string };
-        }[];
-        _count: { enrollments: number; results: number; attendances: number };
-      })
-    | null
-  > {
+  ) {
     requireAdminOrAbove(context);
 
     if (!context.schoolId) {
@@ -345,7 +333,7 @@ export const StudentService = {
       updateData.studentId = data.studentId;
     }
     if (data.parentId !== undefined) {
-      updateData.parentId = data.parentId;
+      updateData.parent = data.parentId ? { connect: { id: data.parentId } } : { disconnect: true };
     }
 
     const updatedStudent = await prisma.student.update({
@@ -682,7 +670,7 @@ export const StudentService = {
           select: {
             id: true,
             amount: true,
-            paymentMethod: true,
+            method: true,
             paymentDate: true,
           },
           orderBy: { paymentDate: 'desc' },
@@ -735,7 +723,6 @@ export const StudentService = {
                 firstName: true,
                 lastName: true,
                 email: true,
-                phone: true,
               },
             },
           },
@@ -743,11 +730,24 @@ export const StudentService = {
       },
     });
 
-    if (!student?.parent) {
+    if (!student?.parentId) {
       return [];
     }
 
-    return [student.parent];
+    const parent = await prisma.parent.findFirst({
+      where: { id: student.parentId },
+      include: {
+        user: {
+          select: {
+            firstName: true,
+            lastName: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    return parent ? [parent] : [];
   },
 
   /**
