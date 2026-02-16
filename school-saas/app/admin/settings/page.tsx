@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/db';
 import Link from 'next/link';
-import { Settings, School, Bell, Shield, Palette, ChevronRight } from 'lucide-react';
+import { Settings, School, Bell, Shield, Palette } from 'lucide-react';
 
 export default async function SettingsPage() {
   const school = await prisma.school.findFirst();
