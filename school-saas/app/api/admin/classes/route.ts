@@ -21,10 +21,10 @@ export async function GET(req: NextRequest) {
 
     const classes = await prisma.class.findMany({
       where: { schoolId: user.schoolId },
-      orderBy: { grade: 'asc' },
+      orderBy: [{ grade: 'asc' }, { name: 'asc' }],
       include: {
         _count: {
-          select: { students: true, teachers: true },
+          select: { enrollments: true },
         },
       },
     });
@@ -46,44 +46,54 @@ export async function POST(req: NextRequest) {
 
     const user = await prisma.user.findUnique({
       where: { clerkId: userId },
-      include: { adminOf: true },
+      select: { schoolId: true, role: true },
     });
 
     if (!user || !user.schoolId) {
       return NextResponse.json({ error: 'No school associated' }, { status: 403 });
     }
 
+    // Get active academic year
+    const academicYear = await prisma.academicYear.findFirst({
+      where: { schoolId: user.schoolId, isCurrent: true },
+      select: { id: true },
+    });
+
+    if (!academicYear) {
+      return NextResponse.json({ error: 'No active academic year found. Please create an academic year first.' }, { status: 400 });
+    }
+
     const body = await req.json();
-    const { name, grade, section, capacity } = body;
+    const { name, grade, stream } = body;
 
     // Validation
     if (!name || !name.trim()) {
       return NextResponse.json({ error: 'Class name is required' }, { status: 400 });
     }
-    if (!grade) {
+    if (!grade || !grade.trim()) {
       return NextResponse.json({ error: 'Grade/Level is required' }, { status: 400 });
     }
 
-    // Check if class with same name/section already exists
+    // Check if class with same name/stream already exists
     const existing = await prisma.class.findFirst({
       where: {
         schoolId: user.schoolId,
         name: name.trim(),
-        section: section?.trim() || null,
+        stream: stream?.trim() || null,
       },
     });
 
     if (existing) {
-      return NextResponse.json({ error: 'Class with this name and section already exists' }, { status: 400 });
+      return NextResponse.json({ error: 'Class with this name and stream already exists' }, { status: 400 });
     }
 
     const newClass = await prisma.class.create({
       data: {
         name: name.trim(),
-        grade: parseInt(grade),
-        section: section?.trim() || null,
-        capacity: capacity ? parseInt(capacity) : 40,
+        grade: grade.trim(),
+        stream: stream?.trim() || null,
         schoolId: user.schoolId,
+        academicYearId: academicYear.id,
       },
     });
 
