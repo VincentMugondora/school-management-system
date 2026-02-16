@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/db';
 import Link from 'next/link';
-import { Plus, Calendar, ChevronRight, Lock, Unlock, CheckCircle } from 'lucide-react';
+import { Plus, Calendar, ChevronRight, Lock, CheckCircle } from 'lucide-react';
 
 export default async function AcademicYearsPage() {
   const academicYears = await prisma.academicYear.findMany({

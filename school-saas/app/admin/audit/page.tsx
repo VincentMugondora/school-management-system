@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/db';
 import Link from 'next/link';
-import { ClipboardList, Users, Calendar, FileText, Shield, ChevronRight, Eye } from 'lucide-react';
+import { ClipboardList, Eye } from 'lucide-react';
 
 export default async function AuditPage() {
   const logs = await prisma.auditLog.findMany({
