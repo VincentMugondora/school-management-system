@@ -35,23 +35,30 @@ const navItems = [
   { icon: Settings, label: 'Settings', href: '/dashboard/admin/settings' },
 ];
 
-// Mock classes data
-const classes = [
-  { id: 1, name: 'Class 01', section: 'A', students: 45, teachers: 3, subjects: 8 },
-  { id: 2, name: 'Class 02', section: 'B', students: 42, teachers: 4, subjects: 8 },
-  { id: 3, name: 'Class 03', section: 'A', students: 38, teachers: 3, subjects: 7 },
-  { id: 4, name: 'Class 04', section: 'C', students: 41, teachers: 4, subjects: 8 },
-  { id: 5, name: 'Class 05', section: 'B', students: 39, teachers: 3, subjects: 7 },
-  { id: 6, name: 'Class 06', section: 'A', students: 44, teachers: 4, subjects: 8 },
-];
-
 export default function ClassesPage() {
   const [user, setUser] = useState<{ role: Role; firstName: string | null; lastName: string | null } | null>(null);
   const [loading, setLoading] = useState(true);
+  const [classes, setClasses] = useState([]);
+  const [loadingClasses, setLoadingClasses] = useState(true);
 
   useEffect(() => {
     loadData();
+    fetchClasses();
   }, []);
+
+  async function fetchClasses() {
+    try {
+      const res = await fetch('/api/admin/classes');
+      const data = await res.json();
+      if (data.success) {
+        setClasses(data.classes);
+      }
+    } catch (err) {
+      console.error('Failed to fetch classes');
+    } finally {
+      setLoadingClasses(false);
+    }
+  }
 
   async function loadData() {
     try {
@@ -148,7 +155,7 @@ export default function ClassesPage() {
               <p className="text-gray-500">Manage all classes in your school</p>
             </div>
             <Link 
-              href="/classes/create"
+              href="/dashboard/admin/classes/new"
               className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-xl hover:bg-purple-700"
             >
               <Plus className="w-4 h-4" />
@@ -157,47 +164,62 @@ export default function ClassesPage() {
           </div>
 
           {/* Classes Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {classes.map((cls) => (
-              <div key={cls.id} className="bg-white rounded-2xl p-6 shadow-sm">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
-                    <BookMarked className="w-6 h-6 text-purple-600" />
+          {loadingClasses ? (
+            <div className="flex justify-center py-12">
+              <div className="w-8 h-8 border-2 border-purple-600 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+          ) : classes.length === 0 ? (
+            <div className="text-center py-12 bg-white rounded-2xl">
+              <BookMarked className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-800 mb-1">No classes yet</h3>
+              <p className="text-gray-500 mb-4">Create your first class to start enrolling students</p>
+              <Link 
+                href="/dashboard/admin/classes/new"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+              >
+                <Plus className="w-4 h-4" />
+                Add First Class
+              </Link>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {classes.map((cls: any) => (
+                <div key={cls.id} className="bg-white rounded-2xl p-6 shadow-sm">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
+                      <BookMarked className="w-6 h-6 text-purple-600" />
+                    </div>
+                    <button className="p-2 hover:bg-gray-50 rounded-lg">
+                      <MoreVertical className="w-4 h-4 text-gray-400" />
+                    </button>
                   </div>
-                  <button className="p-2 hover:bg-gray-50 rounded-lg">
-                    <MoreVertical className="w-4 h-4 text-gray-400" />
-                  </button>
-                </div>
-                
-                <h3 className="font-semibold text-gray-800 mb-1">{cls.name}</h3>
-                <p className="text-sm text-gray-500 mb-4">Section {cls.section}</p>
-                
-                <div className="grid grid-cols-3 gap-4 py-4 border-t border-gray-100">
-                  <div className="text-center">
-                    <p className="text-lg font-semibold text-gray-800">{cls.students}</p>
-                    <p className="text-xs text-gray-500">Students</p>
+                  
+                  <h3 className="font-semibold text-gray-800 mb-1">{cls.name}</h3>
+                  <p className="text-sm text-gray-500 mb-4">{cls.section ? `Section ${cls.section}` : 'No section'} • Grade {cls.grade}</p>
+                  
+                  <div className="grid grid-cols-2 gap-4 py-4 border-t border-gray-100">
+                    <div className="text-center">
+                      <p className="text-lg font-semibold text-gray-800">{cls._count?.students || 0}</p>
+                      <p className="text-xs text-gray-500">Students</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-lg font-semibold text-gray-800">{cls._count?.teachers || 0}</p>
+                      <p className="text-xs text-gray-500">Teachers</p>
+                    </div>
                   </div>
-                  <div className="text-center">
-                    <p className="text-lg font-semibold text-gray-800">{cls.teachers}</p>
-                    <p className="text-xs text-gray-500">Teachers</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-lg font-semibold text-gray-800">{cls.subjects}</p>
-                    <p className="text-xs text-gray-500">Subjects</p>
-                  </div>
-                </div>
 
-                <div className="flex gap-2 mt-4">
-                  <Link 
-                    href={`/classes/${cls.id}`}
-                    className="flex-1 py-2 bg-purple-50 text-purple-600 rounded-lg text-sm font-medium text-center hover:bg-purple-100"
-                  >
-                    View Details
-                  </Link>
+                  <div className="flex gap-2 mt-4">
+                    <Link 
+                      href={`/dashboard/admin/classes/${cls.id}`}
+                      className="flex-1 py-2 bg-purple-50 text-purple-600 rounded-lg text-sm font-medium text-center hover:bg-purple-100"
+                    >
+                      View Details
+                    </Link>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </main>
     </div>
