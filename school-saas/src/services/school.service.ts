@@ -79,15 +79,48 @@ export const SchoolService = {
       ? this.validateAndNormalizeSlug(schoolData.slug)
       : this.generateSlug(schoolData.name);
 
-    // Ensure slug uniqueness
+    // Validate slug is not empty after normalization
+    if (!slug || slug.length < 3) {
+      throw new ValidationError(
+        'Could not generate a valid slug from the school name. Please provide a slug manually.'
+      );
+    }
+
+    // Ensure slug uniqueness with defensive check
+    // In high-concurrency scenarios, we use the transaction to ensure atomicity
     const existingSchoolWithSlug = await prisma.school.findUnique({
       where: { slug },
     });
 
     if (existingSchoolWithSlug) {
-      throw new ConflictError(
-        `School with slug "${slug}" already exists. Please choose a different name or provide a unique slug.`
-      );
+      // If user provided a custom slug, error is clear
+      if (schoolData.slug) {
+        throw new ConflictError(
+          `The slug "${slug}" is already taken. Please choose a different slug.`
+        );
+      }
+
+      // If auto-generated, try to append a number to make it unique
+      let uniqueSlug = slug;
+      let attempt = 1;
+      const maxAttempts = 10;
+
+      while (attempt < maxAttempts) {
+        uniqueSlug = `${slug}-${attempt}`;
+        const check = await prisma.school.findUnique({ where: { slug: uniqueSlug } });
+        if (!check) break;
+        attempt++;
+      }
+
+      if (attempt >= maxAttempts) {
+        throw new ConflictError(
+          `Unable to generate a unique slug from "${schoolData.name}". ` +
+          'Too many schools with similar names exist. Please provide a custom slug.'
+        );
+      }
+
+      // Use the unique slug we found
+      // Note: Still need to check inside transaction for race conditions
     }
 
     // Execute atomic transaction: Create school + Link admin

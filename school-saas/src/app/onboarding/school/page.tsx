@@ -59,7 +59,7 @@ export default function SchoolOnboardingPage() {
 
   /**
    * Check onboarding status on mount
-   * Redirect if user already has a school
+   * Redirect if user already has a school or is not an admin
    */
   useEffect(() => {
     const checkStatus = async () => {
@@ -67,13 +67,33 @@ export default function SchoolOnboardingPage() {
         const res = await fetch('/api/user/profile');
         const data = await res.json();
 
-        if (data.success && data.user?.schoolId) {
-          // User already has a school, redirect to dashboard
+        if (!data.success || !data.user) {
+          setError('Unable to verify user profile. Please try again.');
+          setIsChecking(false);
+          return;
+        }
+
+        const { role, schoolId } = data.user;
+
+        // Check if user is admin
+        const isAdmin = role === 'ADMIN' || role === 'SUPER_ADMIN';
+        if (!isAdmin) {
+          // Non-admin users should not be on onboarding page
+          setError('Only administrators can create schools. Redirecting...');
+          setTimeout(() => router.push('/dashboard'), 2000);
+          return;
+        }
+
+        // Check if admin already has a school
+        if (schoolId) {
+          // Admin already has a school, redirect to dashboard
           router.push('/dashboard/admin');
           return;
         }
+
+        // Admin without school - allow to stay on onboarding page
       } catch {
-        // Silent fail - let the form handle errors
+        setError('Failed to load user profile. Please refresh the page.');
       } finally {
         setIsChecking(false);
       }
@@ -110,11 +130,30 @@ export default function SchoolOnboardingPage() {
         // Success - redirect to admin dashboard
         router.push('/dashboard/admin');
       } else {
-        // API returned error
-        setError(result.error || 'Failed to create school. Please try again.');
+        // API returned error with specific message
+        const errorMessage = result.error || 'Failed to create school. Please try again.';
+        const errorCode = result.code;
+
+        // Provide more context for specific errors
+        if (errorCode === 'SCHOOL_ALREADY_EXISTS') {
+          setError('You have already created a school. Only one school is allowed per administrator.');
+        } else if (errorCode === 'FORBIDDEN') {
+          setError('Only administrators can create schools.');
+        } else if (errorCode === 'VALIDATION_ERROR' && result.details) {
+          // Format validation errors
+          const details = Object.entries(result.details)
+            .map(([field, errors]) => `${field}: ${(errors as string[]).join(', ')}`)
+            .join('; ');
+          setError(`Validation failed: ${details}`);
+        } else if (errorCode === 'CONFLICT') {
+          setError(`School creation conflict: ${errorMessage}`);
+        } else {
+          setError(errorMessage);
+        }
       }
-    } catch {
-      setError('An unexpected error occurred. Please try again.');
+    } catch (err) {
+      console.error('School creation error:', err);
+      setError('An unexpected error occurred while creating your school. Please try again or contact support if the problem persists.');
     } finally {
       setIsLoading(false);
     }
