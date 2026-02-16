@@ -203,48 +203,29 @@ export default function NewStudentPage({ classes, academicYears }: NewStudentPag
 
         {/* Parent/Guardian Information */}
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">Parent/Guardian Information</h2>
+          <h2 className="text-lg font-semibold text-gray-800 mb-4">Parent/Guardian Information (Optional)</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
-              <input
-                type="text"
-                value={formData.parentFirstName}
-                onChange={(e) => setFormData({ ...formData, parentFirstName: e.target.value })}
-                aria-label="Parent first name"
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
-              <input
-                type="text"
-                value={formData.parentLastName}
-                onChange={(e) => setFormData({ ...formData, parentLastName: e.target.value })}
-                aria-label="Parent last name"
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-              <input
-                type="email"
-                value={formData.parentEmail}
-                onChange={(e) => setFormData({ ...formData, parentEmail: e.target.value })}
-                aria-label="Parent email"
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
-              <input
-                type="tel"
-                value={formData.parentPhone}
-                onChange={(e) => setFormData({ ...formData, parentPhone: e.target.value })}
-                aria-label="Parent phone"
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              />
-            </div>
+            <FormInput
+              label="Parent First Name"
+              {...register('parentFirstName')}
+              error={errors.parentFirstName?.message}
+            />
+            <FormInput
+              label="Parent Last Name"
+              {...register('parentLastName')}
+              error={errors.parentLastName?.message}
+            />
+            <FormInput
+              label="Parent Email"
+              type="email"
+              {...register('parentEmail')}
+              error={errors.parentEmail?.message}
+            />
+            <FormInput
+              label="Parent Phone"
+              {...register('parentPhone')}
+              error={errors.parentPhone?.message}
+            />
           </div>
         </div>
 
@@ -258,10 +239,10 @@ export default function NewStudentPage({ classes, academicYears }: NewStudentPag
           </Link>
           <button
             type="submit"
-            disabled={loading}
+            disabled={isSubmitting}
             className="flex items-center gap-2 px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50"
           >
-            {loading ? (
+            {isSubmitting ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
                 Creating...
