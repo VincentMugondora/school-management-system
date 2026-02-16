@@ -1,4 +1,3 @@
-import { prisma } from '@/lib/db';
 import Link from 'next/link';
 import { BarChart3, Calendar, FileDown, Users, Printer } from 'lucide-react';
 

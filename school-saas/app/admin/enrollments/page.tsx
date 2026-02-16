@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/db';
 import Link from 'next/link';
-import { Plus, Users, ArrowUpRight, BookOpen, ChevronRight } from 'lucide-react';
+import { ArrowUpRight } from 'lucide-react';
 
 export default async function EnrollmentsPage() {
   const currentYear = await prisma.academicYear.findFirst({
@@ -10,9 +10,7 @@ export default async function EnrollmentsPage() {
   const enrollments = await prisma.enrollment.findMany({
     where: currentYear ? { academicYearId: currentYear.id } : {},
     include: {
-      student: {
-        include: { user: true }
-      },
+      student: true,
       class: true
     },
     orderBy: { createdAt: 'desc' },
@@ -53,7 +51,7 @@ export default async function EnrollmentsPage() {
         <div className="bg-yellow-50 rounded-xl p-6 border border-yellow-100">
           <h3 className="text-sm font-medium text-yellow-700 mb-2">Completed</h3>
           <p className="text-3xl font-bold text-yellow-900">
-            {enrollments.filter(e => e.status === 'COMPLETED').length}
+            {enrollments.filter(e => e.status === 'COMPLETE').length}
           </p>
         </div>
         <div className="bg-red-50 rounded-xl p-6 border border-red-100">
@@ -81,12 +79,12 @@ export default async function EnrollmentsPage() {
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
                       <span className="text-sm font-medium text-purple-600">
-                        {enrollment.student.user.firstName?.[0]}{enrollment.student.user.lastName?.[0]}
+                        {enrollment.student.firstName?.[0]}{enrollment.student.lastName?.[0]}
                       </span>
                     </div>
                     <div>
                       <p className="font-medium text-gray-800">
-                        {enrollment.student.user.firstName} {enrollment.student.user.lastName}
+                        {enrollment.student.firstName} {enrollment.student.lastName}
                       </p>
                     </div>
                   </div>
@@ -100,7 +98,7 @@ export default async function EnrollmentsPage() {
                 <td className="px-6 py-4">
                   <span className={`px-2 py-1 text-xs font-medium rounded-full ${
                     enrollment.status === 'ACTIVE' ? 'bg-green-100 text-green-700' :
-                    enrollment.status === 'COMPLETED' ? 'bg-blue-100 text-blue-700' :
+                    enrollment.status === 'COMPLETE' ? 'bg-blue-100 text-blue-700' :
                     enrollment.status === 'DROPPED' ? 'bg-red-100 text-red-700' :
                     'bg-gray-100 text-gray-700'
                   }`}>

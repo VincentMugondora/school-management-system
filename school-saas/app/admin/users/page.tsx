@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/db';
 import Link from 'next/link';
-import { Plus, Users, Shield, ChevronRight, Mail } from 'lucide-react';
+import { Plus, Users, Shield } from 'lucide-react';
 
 export default async function UsersPage() {
   const users = await prisma.user.findMany({

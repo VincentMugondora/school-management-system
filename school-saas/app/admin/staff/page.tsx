@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/db';
 import Link from 'next/link';
-import { Plus, Users, ChevronRight } from 'lucide-react';
+import { Plus, GraduationCap, ChevronRight, Mail } from 'lucide-react';
 
 export default async function StaffPage() {
   const teachers = await prisma.teacher.findMany({
