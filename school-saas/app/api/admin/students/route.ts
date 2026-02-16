@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1', 10);
     const limit = parseInt(searchParams.get('limit') || '20', 10);
 
-    const result = await StudentService.getStudents(
+    const result = await StudentService.listStudents(
       context.schoolId!,
       {
         search,
