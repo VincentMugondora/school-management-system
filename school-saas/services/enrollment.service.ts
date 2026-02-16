@@ -502,6 +502,22 @@ export const EnrollmentService = {
       },
     });
 
+    // Audit log enrollment transfer
+    await AuditService.logUpdate(
+      context,
+      'ENROLLMENT',
+      id,
+      {
+        classId: existingEnrollment.classId,
+        status: existingEnrollment.status,
+      },
+      {
+        classId: updatedEnrollment.classId,
+        status: updatedEnrollment.status,
+      },
+      { reason: `Student transferred to class ${newClassId}` }
+    );
+
     return updatedEnrollment;
   },
 
