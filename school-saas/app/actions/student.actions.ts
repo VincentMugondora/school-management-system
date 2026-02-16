@@ -19,34 +19,37 @@ import {
 import { Student, Enrollment, EnrollmentStatus, Gender, Role } from '@prisma/client';
 import { ServiceContext, ServiceError } from '@/types/domain.types';
 import { revalidatePath } from 'next/cache';
+import { auth } from '@clerk/nextjs/server';
 
 // ============================================
-// MOCK AUTHENTICATION - Replace with Clerk when ready
+// AUTHENTICATION - Using Clerk
 // ============================================
 
 async function getCurrentUser(): Promise<ServiceContext | null> {
-  // TODO: Replace with actual Clerk authentication
-  // Fetch or create the first available school from the database
-  let school = await prisma.school.findFirst({
-    where: { status: 'ACTIVE' },
-    orderBy: { createdAt: 'asc' },
+  const { userId: clerkId } = await auth();
+
+  if (!clerkId) {
+    return null;
+  }
+
+  // Find user by clerkId with school relation
+  const user = await prisma.user.findUnique({
+    where: { clerkId },
+    select: {
+      id: true,
+      schoolId: true,
+      role: true,
+    },
   });
 
-  // Auto-create a default school if none exists
-  if (!school) {
-    school = await prisma.school.create({
-      data: {
-        name: 'Default School',
-        slug: 'default-school',
-        status: 'ACTIVE',
-      },
-    });
+  if (!user || !user.schoolId) {
+    return null;
   }
 
   return {
-    userId: 'mock-user-id',
-    schoolId: school.id,
-    role: Role.ADMIN,
+    userId: user.id,
+    schoolId: user.schoolId,
+    role: user.role,
   };
 }
 
