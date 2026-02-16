@@ -5,8 +5,6 @@ import { Plus, Users } from 'lucide-react';
 export default async function StudentsPage() {
   const students = await prisma.student.findMany({
     include: {
-      user: true,
-      class: true,
       enrollments: {
         where: { status: 'ACTIVE' },
         include: { class: true }
@@ -57,12 +55,12 @@ export default async function StudentsPage() {
                   <Link href={`/admin/students/${student.id}`} className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
                       <span className="text-sm font-medium text-purple-600">
-                        {student.user.firstName?.[0]}{student.user.lastName?.[0]}
+                        {student.firstName?.[0]}{student.lastName?.[0]}
                       </span>
                     </div>
                     <div>
-                      <p className="font-medium text-gray-800">{student.user.firstName} {student.user.lastName}</p>
-                      <p className="text-sm text-gray-500">{student.user.email}</p>
+                      <p className="font-medium text-gray-800">{student.firstName} {student.lastName}</p>
+                      <p className="text-sm text-gray-500">{student.email}</p>
                     </div>
                   </Link>
                 </td>

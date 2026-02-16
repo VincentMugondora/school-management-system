@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createAcademicYear } from '@/app/actions/academic.actions';
-import { ArrowLeft, Plus, Calendar } from 'lucide-react';
+import { ArrowLeft, Plus } from 'lucide-react';
 import Link from 'next/link';
 
 export default function NewAcademicYearPage() {
@@ -51,7 +51,7 @@ export default function NewAcademicYearPage() {
       } else {
         setError(result.error || 'Failed to create academic year');
       }
-    } catch (err) {
+    } catch {
       setError('An unexpected error occurred');
     } finally {
       setIsSubmitting(false);
@@ -92,6 +92,7 @@ export default function NewAcademicYearPage() {
                 name="name"
                 required
                 placeholder="e.g., 2024-2025"
+                aria-label="Year Name"
                 className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
               />
             </div>
@@ -100,6 +101,7 @@ export default function NewAcademicYearPage() {
                 <input
                   type="checkbox"
                   name="isCurrent"
+                  aria-label="Set as current academic year"
                   className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
                 />
                 <span className="text-sm text-gray-700">Set as current academic year</span>
@@ -111,6 +113,7 @@ export default function NewAcademicYearPage() {
                 type="date"
                 name="startDate"
                 required
+                aria-label="Start Date"
                 className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
               />
             </div>
@@ -120,6 +123,7 @@ export default function NewAcademicYearPage() {
                 type="date"
                 name="endDate"
                 required
+                aria-label="End Date"
                 className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
               />
             </div>
