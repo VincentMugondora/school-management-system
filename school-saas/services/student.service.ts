@@ -420,6 +420,19 @@ export const StudentService = {
       where: { id },
       data: { deletedAt: new Date() },
     });
+
+    // Audit log the deletion
+    await AuditService.logDelete(
+      context,
+      'STUDENT',
+      id,
+      {
+        firstName: existingStudent.firstName,
+        lastName: existingStudent.lastName,
+        studentId: existingStudent.studentId,
+        deletedAt: null,
+      }
+    );
   },
 
   /**
@@ -451,6 +464,24 @@ export const StudentService = {
       where: { id },
       data: { deletedAt: null },
     });
+
+    // Audit log the restoration
+    await AuditService.logUpdate(
+      context,
+      'STUDENT',
+      id,
+      {
+        firstName: existingStudent.firstName,
+        lastName: existingStudent.lastName,
+        deletedAt: existingStudent.deletedAt?.toISOString(),
+      },
+      {
+        firstName: restoredStudent.firstName,
+        lastName: restoredStudent.lastName,
+        deletedAt: null,
+      },
+      { reason: 'Student restored from deleted state' }
+    );
 
     return restoredStudent;
   },
