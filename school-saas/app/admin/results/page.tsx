@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/db';
 import Link from 'next/link';
-import { FileText, TrendingUp, Users, GraduationCap, ChevronRight } from 'lucide-react';
+import { FileText, GraduationCap, ChevronRight } from 'lucide-react';
 
 export default async function ResultsPage() {
   const [exams, classes] = await Promise.all([

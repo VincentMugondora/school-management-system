@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/db';
 import Link from 'next/link';
-import { FileText, GraduationCap, ChevronRight } from 'lucide-react';
+import { BarChart3, Calendar, FileDown, Users, Printer } from 'lucide-react';
 
 export default async function ReportsPage() {
   return (
