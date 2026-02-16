@@ -466,21 +466,7 @@ export const StudentService = {
   async getStudentAcademicHistory(
     studentId: string,
     context: ServiceContext
-  ): Promise<
-    Array<{
-      id: string;
-      status: string;
-      enrollmentDate: Date;
-      academicYear: { id: string; name: string };
-      class: { id: string; name: string; grade: number };
-      results: Array<{
-        id: string;
-        marks: number;
-        grade: string | null;
-        exam: { name: string; maxMarks: number; subject: { name: string } };
-      }>;
-    }>
-  > {
+  ) {
     requireAdminOrAbove(context);
 
     if (!context.schoolId) {
@@ -523,17 +509,7 @@ export const StudentService = {
   async getStudentAttendance(
     studentId: string,
     context: ServiceContext
-  ): Promise<
-    Array<{
-      termId: string;
-      termName: string;
-      academicYearName: string;
-      totalDays: number;
-      presentDays: number;
-      absentDays: number;
-      percentage: number;
-    }>
-  > {
+  ) {
     requireAdminOrAbove(context);
 
     if (!context.schoolId) {
@@ -588,20 +564,7 @@ export const StudentService = {
   async getStudentResults(
     studentId: string,
     context: ServiceContext
-  ): Promise<
-    Array<{
-      id: string;
-      marks: number;
-      grade: string | null;
-      remarks: string | null;
-      exam: {
-        name: string;
-        maxMarks: number;
-        subject: { name: string };
-        term: { name: string; academicYear: { name: true } };
-      };
-    }>
-  > {
+  ) {
     requireAdminOrAbove(context);
 
     if (!context.schoolId) {
@@ -636,23 +599,7 @@ export const StudentService = {
   async getStudentFees(
     studentId: string,
     context: ServiceContext
-  ): Promise<
-    Array<{
-      id: string;
-      amount: number;
-      paidAmount: number;
-      balance: number;
-      status: string;
-      dueDate: Date | null;
-      term: { name: string; academicYear: { name: string } };
-      payments: Array<{
-        id: string;
-        amount: number;
-        paymentMethod: string;
-        paymentDate: Date;
-      }>;
-    }>
-  > {
+  ) {
     requireAdminOrAbove(context);
 
     if (!context.schoolId) {
@@ -691,19 +638,7 @@ export const StudentService = {
   async getStudentGuardians(
     studentId: string,
     context: ServiceContext
-  ): Promise<
-    Array<{
-      id: string;
-      phone: string | null;
-      address: string | null;
-      user: {
-        firstName: string;
-        lastName: string;
-        email: string;
-        phone: string | null;
-      };
-    }>
-  > {
+  ) {
     requireAdminOrAbove(context);
 
     if (!context.schoolId) {
