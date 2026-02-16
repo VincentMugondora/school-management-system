@@ -1,12 +1,35 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { createStudent } from '@/app/actions/student.actions';
-import { listAcademicYears } from '@/app/actions/academic.actions';
+import Link from 'next/link';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { Gender } from '@prisma/client';
 import { ArrowLeft, Plus, Loader2 } from 'lucide-react';
+import { FormInput } from '@/components/form/FormInput';
+import { FormSelect } from '@/components/form/FormSelect';
+import { FormTextarea } from '@/components/form/FormTextarea';
+import { createStudent } from '@/app/actions/student.actions';
+
+const createStudentSchema = z.object({
+  firstName: z.string().min(1, 'First name is required'),
+  lastName: z.string().min(1, 'Last name is required'),
+  dateOfBirth: z.string().optional(),
+  gender: z.enum(['MALE', 'FEMALE', 'OTHER']).optional(),
+  email: z.string().email('Invalid email').optional().or(z.literal('')),
+  phone: z.string().optional(),
+  address: z.string().optional(),
+  classId: z.string().min(1, 'Class is required'),
+  academicYearId: z.string().min(1, 'Academic year is required'),
+  parentFirstName: z.string().optional(),
+  parentLastName: z.string().optional(),
+  parentEmail: z.string().email('Invalid email').optional().or(z.literal('')),
+  parentPhone: z.string().optional(),
+});
+
+type CreateStudentForm = z.infer<typeof createStudentSchema>;
 
 interface Class {
   id: string;
@@ -20,76 +43,53 @@ interface AcademicYear {
   isCurrent: boolean;
 }
 
-export default function NewStudentPage() {
+interface NewStudentPageProps {
+  classes: Class[];
+  academicYears: AcademicYear[];
+}
+
+export default function NewStudentPage({ classes, academicYears }: NewStudentPageProps) {
   const router = useRouter();
-  const [loading, setLoading] = useState(false);
-  const [classes, setClasses] = useState<Class[]>([]);
-  const [academicYears, setAcademicYears] = useState<AcademicYear[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    dateOfBirth: '',
-    gender: '' as Gender | '',
-    email: '',
-    phone: '',
-    address: '',
-    studentId: '',
-    parentFirstName: '',
-    parentLastName: '',
-    parentEmail: '',
-    parentPhone: '',
-    classId: '',
-    academicYearId: '',
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<CreateStudentForm>({
+    resolver: zodResolver(createStudentSchema),
+    defaultValues: {
+      academicYearId: academicYears.find((y) => y.isCurrent)?.id || '',
+    },
   });
 
-  useEffect(() => {
-    async function fetchData() {
-      const [classesResult, yearsResult] = await Promise.all([
-        fetch('/api/classes').then((r) => r.json()),
-        listAcademicYears(),
-      ]);
-
-      if (classesResult.classes) {
-        setClasses(classesResult.classes);
-      }
-
-      if (yearsResult.success && yearsResult.data) {
-        setAcademicYears(yearsResult.data);
-        const currentYear = yearsResult.data.find((y: AcademicYear) => y.isCurrent);
-        if (currentYear) {
-          setFormData((prev) => ({ ...prev, academicYearId: currentYear.id }));
-        }
-      }
-    }
-
-    fetchData();
-  }, []);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
+  const onSubmit = async (data: CreateStudentForm) => {
+    setIsSubmitting(true);
     setError(null);
 
-    const result = await createStudent({
-      firstName: formData.firstName,
-      lastName: formData.lastName,
-      dateOfBirth: formData.dateOfBirth || undefined,
-      gender: formData.gender || undefined,
-      email: formData.email || undefined,
-      phone: formData.phone || undefined,
-      address: formData.address || undefined,
-      studentId: formData.studentId || undefined,
-      classId: formData.classId,
-      academicYearId: formData.academicYearId,
-    });
+    try {
+      const result = await createStudent({
+        firstName: data.firstName,
+        lastName: data.lastName,
+        dateOfBirth: data.dateOfBirth || undefined,
+        gender: data.gender as Gender | undefined,
+        email: data.email || undefined,
+        phone: data.phone || undefined,
+        address: data.address || undefined,
+        classId: data.classId,
+        academicYearId: data.academicYearId,
+      });
 
-    if (result.success) {
-      router.push('/admin/students');
-    } else {
-      setError(result.error || 'Failed to create student');
-      setLoading(false);
+      if (result.success) {
+        router.push('/admin/students');
+      } else {
+        setError(result.error || 'Failed to create student');
+      }
+    } catch {
+      setError('An unexpected error occurred');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -114,104 +114,57 @@ export default function NewStudentPage() {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         {/* Student Information */}
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
           <h2 className="text-lg font-semibold text-gray-800 mb-4">Student Information</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                First Name <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                required
-                value={formData.firstName}
-                onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                aria-label="First name"
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Last Name <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                required
-                value={formData.lastName}
-                onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                aria-label="Last name"
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Admission Number
-              </label>
-              <input
-                type="text"
-                value={formData.studentId}
-                onChange={(e) => setFormData({ ...formData, studentId: e.target.value })}
-                placeholder="Auto-generated if left empty"
-                aria-label="Admission number"
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Date of Birth</label>
-              <input
-                type="date"
-                value={formData.dateOfBirth}
-                onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })}
-                aria-label="Date of birth"
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Gender</label>
-              <select
-                value={formData.gender}
-                onChange={(e) => setFormData({ ...formData, gender: e.target.value as Gender })}
-                aria-label="Gender"
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              >
-                <option value="">Select Gender</option>
-                <option value="MALE">Male</option>
-                <option value="FEMALE">Female</option>
-                <option value="OTHER">Other</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-              <input
-                type="email"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                aria-label="Email"
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
-              <input
-                type="tel"
-                value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                aria-label="Phone"
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              />
-            </div>
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
-              <textarea
-                value={formData.address}
-                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                aria-label="Address"
-                rows={2}
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              />
-            </div>
+            <FormInput
+              label="First Name"
+              {...register('firstName')}
+              error={errors.firstName?.message}
+              required
+            />
+            <FormInput
+              label="Last Name"
+              {...register('lastName')}
+              error={errors.lastName?.message}
+              required
+            />
+            <FormInput
+              label="Date of Birth"
+              type="date"
+              {...register('dateOfBirth')}
+              error={errors.dateOfBirth?.message}
+            />
+            <FormSelect
+              label="Gender"
+              {...register('gender')}
+              error={errors.gender?.message}
+              options={[
+                { value: '', label: 'Select Gender' },
+                { value: 'MALE', label: 'Male' },
+                { value: 'FEMALE', label: 'Female' },
+                { value: 'OTHER', label: 'Other' },
+              ]}
+            />
+            <FormInput
+              label="Email"
+              type="email"
+              {...register('email')}
+              error={errors.email?.message}
+            />
+            <FormInput
+              label="Phone"
+              {...register('phone')}
+              error={errors.phone?.message}
+            />
+            <FormTextarea
+              label="Address"
+              {...register('address')}
+              error={errors.address?.message}
+              className="md:col-span-2"
+            />
           </div>
         </div>
 
@@ -219,44 +172,32 @@ export default function NewStudentPage() {
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
           <h2 className="text-lg font-semibold text-gray-800 mb-4">Enrollment Details</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Academic Year <span className="text-red-500">*</span>
-              </label>
-              <select
-                required
-                value={formData.academicYearId}
-                onChange={(e) => setFormData({ ...formData, academicYearId: e.target.value })}
-                aria-label="Academic year"
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              >
-                <option value="">Select Academic Year</option>
-                {academicYears.map((year) => (
-                  <option key={year.id} value={year.id}>
-                    {year.name} {year.isCurrent && '(Current)'}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Class <span className="text-red-500">*</span>
-              </label>
-              <select
-                required
-                value={formData.classId}
-                onChange={(e) => setFormData({ ...formData, classId: e.target.value })}
-                aria-label="Class"
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              >
-                <option value="">Select Class</option>
-                {classes.map((cls) => (
-                  <option key={cls.id} value={cls.id}>
-                    {cls.name} (Grade {cls.grade})
-                  </option>
-                ))}
-              </select>
-            </div>
+            <FormSelect
+              label="Academic Year"
+              {...register('academicYearId')}
+              error={errors.academicYearId?.message}
+              required
+              options={[
+                { value: '', label: 'Select Academic Year' },
+                ...academicYears.map((year) => ({
+                  value: year.id,
+                  label: year.name + (year.isCurrent ? ' (Current)' : ''),
+                })),
+              ]}
+            />
+            <FormSelect
+              label="Class"
+              {...register('classId')}
+              error={errors.classId?.message}
+              required
+              options={[
+                { value: '', label: 'Select Class' },
+                ...classes.map((cls) => ({
+                  value: cls.id,
+                  label: `${cls.name} (Grade ${cls.grade})`,
+                })),
+              ]}
+            />
           </div>
         </div>
 
