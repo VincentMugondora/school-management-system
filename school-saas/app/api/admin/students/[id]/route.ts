@@ -17,7 +17,6 @@ export async function GET(
     const { id } = params;
 
     const student = await StudentService.getStudentById(
-      context.schoolId!,
       id,
       context
     );
@@ -67,7 +66,6 @@ export async function PATCH(
 
     // Convert date strings to Date objects
     const result = await StudentService.updateStudent(
-      context.schoolId!,
       id,
       {
         firstName: data.firstName,
@@ -77,8 +75,6 @@ export async function PATCH(
         email: data.email,
         phone: data.phone,
         address: data.address,
-        admissionNumber: data.admissionNumber,
-        status: data.status,
       },
       context
     );
@@ -101,7 +97,7 @@ export async function DELETE(
     const context = await getAdminContext();
     const { id } = params;
 
-    await StudentService.softDeleteStudent(context.schoolId!, id, context);
+    await StudentService.deleteStudent(id, context);
 
     return Response.json({ success: true }, { status: 200 });
   } catch (error) {

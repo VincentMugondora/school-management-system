@@ -23,17 +23,13 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '20', 10);
 
     const result = await StudentService.listStudents(
-      context.schoolId!,
+      context,
       {
         search,
         gender,
-        status,
-        classId,
-        academicYearId,
         page,
         limit,
-      },
-      context
+      }
     );
 
     return Response.json(result);
@@ -102,7 +98,6 @@ export async function POST(request: NextRequest) {
 
     // Convert date strings to Date objects
     const result = await StudentService.createStudent(
-      context.schoolId!,
       {
         firstName: data.firstName,
         lastName: data.lastName,
@@ -111,13 +106,7 @@ export async function POST(request: NextRequest) {
         email: data.email,
         phone: data.phone,
         address: data.address,
-        admissionNumber: data.admissionNumber,
-        classId: data.classId,
-        academicYearId: data.academicYearId,
-        enrollmentDate: data.enrollmentDate
-          ? new Date(data.enrollmentDate)
-          : undefined,
-        guardians: data.guardians,
+        studentId: data.admissionNumber,
       },
       context
     );
