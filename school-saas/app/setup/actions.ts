@@ -10,6 +10,7 @@ interface CreateUserProfileInput {
   lastName: string;
   phone?: string;
   isFirstUser: boolean;
+  schoolName?: string;
 }
 
 export async function createUserProfile(input: CreateUserProfileInput) {
@@ -31,6 +32,20 @@ export async function createUserProfile(input: CreateUserProfileInput) {
     // Determine role - first user becomes SUPER_ADMIN
     const role = input.isFirstUser ? Role.SUPER_ADMIN : Role.STUDENT;
 
+    let schoolId: string | undefined;
+
+    // For first user, create a school
+    if (input.isFirstUser && input.schoolName) {
+      const school = await prisma.school.create({
+        data: {
+          name: input.schoolName.trim(),
+          slug: input.schoolName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
+          status: 'ACTIVE',
+        },
+      });
+      schoolId = school.id;
+    }
+
     // Create user in database
     const user = await prisma.user.create({
       data: {
@@ -39,6 +54,7 @@ export async function createUserProfile(input: CreateUserProfileInput) {
         firstName: input.firstName,
         lastName: input.lastName,
         role: role,
+        schoolId: schoolId,
       },
     });
 

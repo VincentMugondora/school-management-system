@@ -12,11 +12,15 @@ export async function GET(req: NextRequest) {
 
     const user = await prisma.user.findUnique({
       where: { clerkId: userId },
-      include: { adminOf: true },
+      select: { schoolId: true, role: true },
     });
 
     if (!user || !user.schoolId) {
-      return NextResponse.json({ error: 'No school associated' }, { status: 403 });
+      return NextResponse.json({ 
+        error: 'No school associated',
+        code: 'NO_SCHOOL',
+        message: 'You need to create a school first. Go to /dashboard/admin/school/new'
+      }, { status: 403 });
     }
 
     const classes = await prisma.class.findMany({
@@ -50,7 +54,11 @@ export async function POST(req: NextRequest) {
     });
 
     if (!user || !user.schoolId) {
-      return NextResponse.json({ error: 'No school associated' }, { status: 403 });
+      return NextResponse.json({ 
+        error: 'No school associated',
+        code: 'NO_SCHOOL',
+        message: 'You need to create a school first. Go to /dashboard/admin/school/new'
+      }, { status: 403 });
     }
 
     // Get active academic year

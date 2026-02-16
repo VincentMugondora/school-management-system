@@ -25,6 +25,7 @@ export default function SetupForm({
     firstName: firstName || '',
     lastName: lastName || '',
     phone: '',
+    schoolName: '',
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -106,6 +107,23 @@ export default function SetupForm({
           className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:outline-none"
         />
       </div>
+
+      {isFirstUser && (
+        <div>
+          <label className="mb-1 block text-sm font-medium text-gray-700">
+            School Name <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="text"
+            value={formData.schoolName}
+            onChange={(e) => setFormData({ ...formData, schoolName: e.target.value })}
+            placeholder="e.g., Harare High School"
+            className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:outline-none"
+            required={isFirstUser}
+          />
+          <p className="mt-1 text-xs text-gray-500">Your school will be created with you as administrator</p>
+        </div>
+      )}
 
       {isFirstUser && (
         <div className="rounded-md bg-indigo-50 p-3 text-sm text-indigo-700">
