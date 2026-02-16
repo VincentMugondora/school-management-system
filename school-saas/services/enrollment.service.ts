@@ -7,6 +7,7 @@ import {
   ValidationError,
   ConflictError,
 } from '@/types/domain.types';
+import { AuditService } from './audit.service';
 
 // ============================================
 // AUTHORIZATION HELPERS
@@ -113,6 +114,19 @@ export const EnrollmentService = {
         status: data.status ?? EnrollmentStatus.ACTIVE,
       },
     });
+
+    // Audit log enrollment creation
+    await AuditService.logCreate(
+      context,
+      'ENROLLMENT',
+      enrollment.id,
+      {
+        studentId: data.studentId,
+        academicYearId: data.academicYearId,
+        classId: data.classId,
+        status: data.status ?? 'ACTIVE',
+      }
+    );
 
     return enrollment;
   },
