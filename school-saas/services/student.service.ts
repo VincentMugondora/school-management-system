@@ -6,6 +6,7 @@ import {
   ForbiddenError,
   ConflictError,
 } from '@/types/domain.types';
+import { AuditService } from './audit.service';
 
 // ============================================
 // AUTHORIZATION HELPERS
@@ -340,6 +341,35 @@ export const StudentService = {
       where: { id },
       data: updateData,
     });
+
+    // Audit log the update
+    await AuditService.logUpdate(
+      context,
+      'STUDENT',
+      id,
+      {
+        firstName: existingStudent.firstName,
+        lastName: existingStudent.lastName,
+        dateOfBirth: existingStudent.dateOfBirth,
+        gender: existingStudent.gender,
+        address: existingStudent.address,
+        phone: existingStudent.phone,
+        email: existingStudent.email,
+        studentId: existingStudent.studentId,
+        parentId: existingStudent.parentId,
+      },
+      {
+        firstName: updatedStudent.firstName,
+        lastName: updatedStudent.lastName,
+        dateOfBirth: updatedStudent.dateOfBirth,
+        gender: updatedStudent.gender,
+        address: updatedStudent.address,
+        phone: updatedStudent.phone,
+        email: updatedStudent.email,
+        studentId: updatedStudent.studentId,
+        parentId: updatedStudent.parentId,
+      }
+    );
 
     return updatedStudent;
   },
