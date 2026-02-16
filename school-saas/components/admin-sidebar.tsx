@@ -21,7 +21,7 @@ import {
   LogOut
 } from 'lucide-react';
 import { useState } from 'react';
-import { User, Role } from '@prisma/client';
+import { User } from '@prisma/client';
 
 interface AdminSidebarProps {
   user: User;
