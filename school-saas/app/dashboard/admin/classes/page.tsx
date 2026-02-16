@@ -20,7 +20,8 @@ import {
   Star,
   ArrowLeft,
   Users2,
-  BookMarked
+  BookMarked,
+  Calendar
 } from 'lucide-react';
 import { UserButton } from '@clerk/nextjs';
 
@@ -29,6 +30,7 @@ const navItems = [
   { icon: Users, label: 'Students', href: '/dashboard/admin/students' },
   { icon: GraduationCap, label: 'Teachers', href: '/dashboard/admin/teachers' },
   { icon: BookOpen, label: 'Classes', href: '/dashboard/admin/classes', active: true },
+  { icon: Calendar, label: 'Academic Years', href: '/dashboard/admin/academic-years' },
   { icon: FileText, label: 'Subjects', href: '/dashboard/admin/subjects' },
   { icon: Award, label: 'Exams', href: '/dashboard/admin/exams' },
   { icon: Wallet, label: 'Finance', href: '/dashboard/accountant' },
