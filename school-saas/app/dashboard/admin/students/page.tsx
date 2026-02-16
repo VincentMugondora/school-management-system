@@ -10,6 +10,8 @@ import {
   Users, 
   GraduationCap, 
   BookOpen, 
+  FileText,
+  Award,
   Wallet, 
   Settings, 
   Bell, 
