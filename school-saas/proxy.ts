@@ -2,6 +2,7 @@ import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
 import { NextResponse } from 'next/server';
 import { onboardingGuard, pathRequiresOnboarding, isOnboardingPath } from './src/lib/auth/onboardingGuard';
 import { approvalGuard, pathRequiresApproval, isApprovalPath } from './src/lib/auth/approvalGuard';
+import { getPostLoginRedirect, isPostLoginEntryPath } from './src/lib/auth/postLoginRedirect';
 
 const isProtectedRoute = createRouteMatcher([
   '/dashboard(.*)',
@@ -28,6 +29,16 @@ export default clerkMiddleware(async (auth, req) => {
     const signInUrl = new URL('/sign-in', req.url);
     signInUrl.searchParams.set('redirect_url', req.url);
     return NextResponse.redirect(signInUrl);
+  }
+
+  // Handle post-login redirects for entry paths (home, sign-in, etc.)
+  if (userId && isPostLoginEntryPath(req.nextUrl.pathname)) {
+    const redirectResult = await getPostLoginRedirect(userId);
+    
+    // Only redirect if we're not already at the target URL
+    if (redirectResult.redirectUrl !== req.nextUrl.pathname) {
+      return NextResponse.redirect(new URL(redirectResult.redirectUrl, req.url));
+    }
   }
 
   // Check onboarding status for admin routes that require school setup
