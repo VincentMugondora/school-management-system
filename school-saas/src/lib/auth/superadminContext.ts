@@ -70,14 +70,13 @@ export type ServiceContext =
 /**
  * Result of privilege validation
  */
-export interface PrivilegeValidationResult {
-  allowed: true;
-  context: ServiceContext;
-} | {
-  allowed: false;
-  reason: string;
-  code: 'UNAUTHORIZED' | 'FORBIDDEN' | 'PRIVILEGE_ESCALATION' | 'SCHOOL_SUSPENDED' | 'DELEGATION_REQUIRED';
-};
+export type PrivilegeValidationResult =
+  | { allowed: true; context: ServiceContext }
+  | {
+      allowed: false;
+      reason: string;
+      code: 'UNAUTHORIZED' | 'FORBIDDEN' | 'PRIVILEGE_ESCALATION' | 'SCHOOL_SUSPENDED' | 'DELEGATION_REQUIRED';
+    };
 
 // ============================================
 // ERROR CLASSES
