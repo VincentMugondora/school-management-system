@@ -1,7 +1,7 @@
 import { prisma } from '@/lib/db';
 import { redirect } from 'next/navigation';
 import { auth } from '@clerk/nextjs/server';
-import { Role } from '@prisma/client';
+import { Role, UserStatus, SchoolStatus } from '@prisma/client';
 import Link from 'next/link';
 import {
   Building2,
@@ -27,13 +27,20 @@ import {
 async function getSystemStatistics() {
   const [
     totalSchools,
+    activeSchools,
+    pendingApprovals,
     totalUsers,
     totalStudents,
     totalTeachers,
     recentUsers,
-    activeSchools,
   ] = await Promise.all([
     prisma.school.count(),
+    prisma.school.count({
+      where: { status: SchoolStatus.ACTIVE },
+    }),
+    prisma.user.count({
+      where: { status: UserStatus.PENDING },
+    }),
     prisma.user.count(),
     prisma.student.count(),
     prisma.teacher.count(),
@@ -49,20 +56,16 @@ async function getSystemStatistics() {
         createdAt: true,
       },
     }),
-    prisma.school.count({
-      where: {
-        users: { some: {} },
-      },
-    }),
   ]);
 
   return {
     totalSchools,
+    activeSchools,
+    pendingApprovals,
     totalUsers,
     totalStudents,
     totalTeachers,
     recentUsers,
-    activeSchools,
   };
 }
 
@@ -91,33 +94,25 @@ export default async function SuperAdminDashboardPage() {
       title: 'Total Schools',
       value: stats.totalSchools,
       icon: Building2,
-      change: '+12%',
-      trend: 'up',
       href: '/dashboard/superadmin/schools',
+    },
+    {
+      title: 'Active Schools',
+      value: stats.activeSchools,
+      icon: School,
+      href: '/dashboard/superadmin/schools',
+    },
+    {
+      title: 'Pending Approvals',
+      value: stats.pendingApprovals,
+      icon: Users,
+      href: '/dashboard/superadmin/approvals',
     },
     {
       title: 'Total Users',
       value: stats.totalUsers,
       icon: Users,
-      change: '+8%',
-      trend: 'up',
       href: '/dashboard/superadmin/users',
-    },
-    {
-      title: 'Total Students',
-      value: stats.totalStudents,
-      icon: GraduationCap,
-      change: '+15%',
-      trend: 'up',
-      href: '/dashboard/superadmin/students',
-    },
-    {
-      title: 'Total Teachers',
-      value: stats.totalTeachers,
-      icon: School,
-      change: '+5%',
-      trend: 'up',
-      href: '/dashboard/superadmin/teachers',
     },
   ];
 
@@ -183,14 +178,6 @@ export default async function SuperAdminDashboardPage() {
             <div className="flex items-start justify-between">
               <div className="w-12 h-12 bg-indigo-50 rounded-xl flex items-center justify-center">
                 <card.icon className="w-6 h-6 text-indigo-600" />
-              </div>
-              <div className="flex items-center gap-1 text-green-600 text-sm font-medium">
-                {card.change}
-                {card.trend === 'up' ? (
-                  <ArrowUpRight className="w-4 h-4" />
-                ) : (
-                  <ArrowDownRight className="w-4 h-4" />
-                )}
               </div>
             </div>
             <div className="mt-4">
@@ -281,6 +268,12 @@ export default async function SuperAdminDashboardPage() {
               <span className="text-gray-600">Active Schools</span>
               <span className="font-semibold text-gray-900">
                 {stats.activeSchools} / {stats.totalSchools}
+              </span>
+            </div>
+            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <span className="text-gray-600">Pending Approvals</span>
+              <span className="font-semibold text-gray-900">
+                {stats.pendingApprovals}
               </span>
             </div>
             <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
