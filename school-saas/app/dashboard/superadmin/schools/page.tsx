@@ -248,15 +248,39 @@ export default async function SchoolsListPage({
                     <Building2 className="w-12 h-12 mx-auto mb-4 text-gray-300" />
                     <p className="text-lg font-medium">No schools found</p>
                     <p className="text-sm mt-1">
-                      {searchQuery
-                        ? 'Try adjusting your search terms'
+                      {searchQuery || statusFilter
+                        ? 'Try adjusting your search or filters'
                         : 'Create your first school to get started'}
                     </p>
                   </td>
                 </tr>
               ) : (
                 schools.map((school) => {
-                  const isActive = school._count.users > 0;
+                  const getStatusColor = (status: SchoolStatus) => {
+                    switch (status) {
+                      case SchoolStatus.ACTIVE:
+                        return 'bg-green-100 text-green-700';
+                      case SchoolStatus.SUSPENDED:
+                        return 'bg-red-100 text-red-700';
+                      case SchoolStatus.PENDING:
+                        return 'bg-yellow-100 text-yellow-700';
+                      default:
+                        return 'bg-gray-100 text-gray-700';
+                    }
+                  };
+
+                  const getStatusLabel = (status: SchoolStatus) => {
+                    switch (status) {
+                      case SchoolStatus.ACTIVE:
+                        return 'Active';
+                      case SchoolStatus.SUSPENDED:
+                        return 'Suspended';
+                      case SchoolStatus.PENDING:
+                        return 'Pending';
+                      default:
+                        return status;
+                    }
+                  };
 
                   return (
                     <tr key={school.id} className="hover:bg-gray-50 transition-colors">
@@ -310,18 +334,20 @@ export default async function SchoolsListPage({
                       </td>
                       <td className="px-6 py-4 text-center">
                         <span
-                          className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium ${
-                            isActive
-                              ? 'bg-green-100 text-green-700'
-                              : 'bg-gray-100 text-gray-600'
-                          }`}
+                          className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(
+                            school.status
+                          )}`}
                         >
                           <span
                             className={`w-2 h-2 rounded-full ${
-                              isActive ? 'bg-green-500' : 'bg-gray-400'
+                              school.status === SchoolStatus.ACTIVE
+                                ? 'bg-green-500'
+                                : school.status === SchoolStatus.SUSPENDED
+                                ? 'bg-red-500'
+                                : 'bg-yellow-500'
                             }`}
                           />
-                          {isActive ? 'Active' : 'Suspended'}
+                          {getStatusLabel(school.status)}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-right">
