@@ -431,9 +431,9 @@ export default async function SchoolsListPage({
             <div className="flex items-center gap-2">
               {currentPage > 1 && (
                 <Link
-                  href={`/dashboard/superadmin/schools?page=${
-                    currentPage - 1
-                  }${searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : ''}`}
+                  href={`/dashboard/superadmin/schools?page=${currentPage - 1}${
+                    searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : ''
+                  }${statusFilter ? `&status=${statusFilter}` : ''}`}
                   className="inline-flex items-center gap-1 px-3 py-1.5 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors text-sm font-medium"
                 >
                   <ChevronLeft className="w-4 h-4" />
@@ -442,9 +442,9 @@ export default async function SchoolsListPage({
               )}
               {currentPage < totalPages && (
                 <Link
-                  href={`/dashboard/superadmin/schools?page=${
-                    currentPage + 1
-                  }${searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : ''}`}
+                  href={`/dashboard/superadmin/schools?page=${currentPage + 1}${
+                    searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : ''
+                  }${statusFilter ? `&status=${statusFilter}` : ''}`}
                   className="inline-flex items-center gap-1 px-3 py-1.5 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors text-sm font-medium"
                 >
                   Next
