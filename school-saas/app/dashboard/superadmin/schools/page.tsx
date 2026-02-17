@@ -2,7 +2,7 @@ import { prisma } from '@/lib/db';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { auth } from '@clerk/nextjs/server';
-import { Role } from '@prisma/client';
+import { Role, SchoolStatus } from '@prisma/client';
 import {
   Building2,
   Plus,
@@ -13,7 +13,12 @@ import {
   Users,
   GraduationCap,
   Calendar,
+  PauseCircle,
+  PlayCircle,
+  ExternalLink,
+  Filter,
 } from 'lucide-react';
+import { revalidatePath } from 'next/cache';
 
 /**
  * SuperAdmin Schools List Page
@@ -27,24 +32,33 @@ import {
 const ITEMS_PER_PAGE = 10;
 
 interface SchoolsPageProps {
-  searchParams: Promise<{ page?: string; search?: string }>;
+  searchParams: Promise<{ page?: string; search?: string; status?: string }>;
 }
 
-async function getSchoolsData(page: number, searchQuery: string = '') {
+async function getSchoolsData(
+  page: number,
+  searchQuery: string = '',
+  statusFilter: string | null = null
+) {
   const skip = (page - 1) * ITEMS_PER_PAGE;
 
-  const whereClause = searchQuery
-    ? {
-        OR: [
-          { name: { contains: searchQuery, mode: 'insensitive' as const } },
-          { address: { contains: searchQuery, mode: 'insensitive' as const } },
-        ],
-      }
-    : {};
+  const where: any = {};
 
-  const [schools, totalSchools] = await Promise.all([
+  if (searchQuery) {
+    where.OR = [
+      { name: { contains: searchQuery, mode: 'insensitive' } },
+      { address: { contains: searchQuery, mode: 'insensitive' } },
+      { email: { contains: searchQuery, mode: 'insensitive' } },
+    ];
+  }
+
+  if (statusFilter && statusFilter !== 'ALL') {
+    where.status = statusFilter as SchoolStatus;
+  }
+
+  const [schools, totalSchools, statusCounts] = await Promise.all([
     prisma.school.findMany({
-      where: whereClause,
+      where,
       skip,
       take: ITEMS_PER_PAGE,
       orderBy: { createdAt: 'desc' },
@@ -53,11 +67,26 @@ async function getSchoolsData(page: number, searchQuery: string = '') {
           select: {
             users: true,
             students: true,
+            teachers: true,
+          },
+        },
+        users: {
+          where: { role: Role.ADMIN },
+          take: 1,
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
           },
         },
       },
     }),
-    prisma.school.count({ where: whereClause }),
+    prisma.school.count({ where }),
+    prisma.school.groupBy({
+      by: ['status'],
+      _count: { status: true },
+    }),
   ]);
 
   const totalPages = Math.ceil(totalSchools / ITEMS_PER_PAGE);
@@ -67,6 +96,7 @@ async function getSchoolsData(page: number, searchQuery: string = '') {
     totalSchools,
     totalPages,
     currentPage: page,
+    statusCounts,
   };
 }
 
@@ -93,11 +123,13 @@ export default async function SchoolsListPage({
   const params = await searchParams;
   const currentPage = Math.max(1, parseInt(params.page || '1', 10));
   const searchQuery = params.search || '';
+  const statusFilter = params.status || null;
 
   // Fetch schools data
-  const { schools, totalSchools, totalPages } = await getSchoolsData(
+  const { schools, totalSchools, totalPages, statusCounts } = await getSchoolsData(
     currentPage,
-    searchQuery
+    searchQuery,
+    statusFilter
   );
 
   return (
@@ -119,22 +151,63 @@ export default async function SchoolsListPage({
         </Link>
       </div>
 
-      {/* Search Bar */}
+      {/* Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="bg-white rounded-xl p-4 border border-gray-100">
+          <p className="text-sm text-gray-500">Total Schools</p>
+          <p className="text-2xl font-bold text-gray-900 mt-1">{totalSchools}</p>
+        </div>
+        <div className="bg-white rounded-xl p-4 border border-gray-100">
+          <p className="text-sm text-gray-500">Active</p>
+          <p className="text-2xl font-bold text-green-600 mt-1">
+            {statusCounts.find(s => s.status === SchoolStatus.ACTIVE)?._count.status || 0}
+          </p>
+        </div>
+        <div className="bg-white rounded-xl p-4 border border-gray-100">
+          <p className="text-sm text-gray-500">Suspended</p>
+          <p className="text-2xl font-bold text-red-600 mt-1">
+            {statusCounts.find(s => s.status === SchoolStatus.SUSPENDED)?._count.status || 0}
+          </p>
+        </div>
+        <div className="bg-white rounded-xl p-4 border border-gray-100">
+          <p className="text-sm text-gray-500">Pending</p>
+          <p className="text-2xl font-bold text-yellow-600 mt-1">
+            {statusCounts.find(s => s.status === SchoolStatus.PENDING)?._count.status || 0}
+          </p>
+        </div>
+      </div>
+
+      {/* Search & Filter */}
       <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-        <form className="relative max-w-md">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-          <input
-            type="text"
-            name="search"
-            defaultValue={searchQuery}
-            placeholder="Search schools by name or address..."
-            className="w-full pl-12 pr-4 py-2.5 bg-gray-50 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-300 transition-colors"
-          />
+        <form className="flex flex-col sm:flex-row gap-4">
+          <div className="flex-1 relative">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <input
+              type="text"
+              name="search"
+              defaultValue={searchQuery}
+              placeholder="Search schools by name or address..."
+              className="w-full pl-12 pr-4 py-2.5 bg-gray-50 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-300 transition-colors"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <Filter className="w-5 h-5 text-gray-400" />
+            <select
+              name="status"
+              defaultValue={statusFilter || 'ALL'}
+              className="px-4 py-2.5 bg-gray-50 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-300"
+            >
+              <option value="ALL">All Status</option>
+              <option value={SchoolStatus.ACTIVE}>Active</option>
+              <option value={SchoolStatus.SUSPENDED}>Suspended</option>
+              <option value={SchoolStatus.PENDING}>Pending</option>
+            </select>
+          </div>
           <button
             type="submit"
-            className="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1.5 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 transition-colors"
+            className="px-4 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium"
           >
-            Search
+            Filter
           </button>
         </form>
       </div>
@@ -160,7 +233,7 @@ export default async function SchoolsListPage({
                 <th className="px-6 py-4 text-center text-sm font-semibold text-gray-700">
                   Status
                 </th>
-                <th className="px-6 py-4 text-center text-sm font-semibold text-gray-700">
+                <th className="px-6 py-4 text-right text-sm font-semibold text-gray-700">
                   Actions
                 </th>
               </tr>
@@ -251,22 +324,57 @@ export default async function SchoolsListPage({
                           {isActive ? 'Active' : 'Suspended'}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-center">
-                        <div className="flex items-center justify-center gap-2">
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          {/* View Button */}
                           <Link
                             href={`/dashboard/superadmin/schools/${school.id}`}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors font-medium text-sm"
+                            className="p-2 text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                            title="View Details"
                           >
-                            <Eye className="w-4 h-4" />
-                            View Dashboard
+                            <Eye className="w-5 h-5" />
                           </Link>
+
+                          {/* Delegated View Button */}
                           <Link
-                            href={`/dashboard/superadmin/schools/${school.id}?tab=admins`}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors font-medium text-sm"
+                            href={`/dashboard/superadmin/schools/${school.id}/view`}
+                            className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                            title="View as School Admin"
                           >
-                            <Users className="w-4 h-4" />
-                            Manage Admins
+                            <ExternalLink className="w-5 h-5" />
                           </Link>
+
+                          {/* Suspend/Activate Button */}
+                          <form
+                            action={async () => {
+                              'use server';
+                              const newStatus =
+                                school.status === SchoolStatus.ACTIVE
+                                  ? SchoolStatus.SUSPENDED
+                                  : SchoolStatus.ACTIVE;
+                              await updateSchoolStatus(school.id, newStatus);
+                            }}
+                          >
+                            <button
+                              type="submit"
+                              className={`p-2 rounded-lg transition-colors ${
+                                school.status === SchoolStatus.ACTIVE
+                                  ? 'text-gray-500 hover:text-red-600 hover:bg-red-50'
+                                  : 'text-gray-500 hover:text-green-600 hover:bg-green-50'
+                              }`}
+                              title={
+                                school.status === SchoolStatus.ACTIVE
+                                  ? 'Suspend School'
+                                  : 'Activate School'
+                              }
+                            >
+                              {school.status === SchoolStatus.ACTIVE ? (
+                                <PauseCircle className="w-5 h-5" />
+                              ) : (
+                                <PlayCircle className="w-5 h-5" />
+                              )}
+                            </button>
+                          </form>
                         </div>
                       </td>
                     </tr>
