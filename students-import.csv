@@ -1,0 +1,16 @@
+studentId,firstName,lastName,gender,dateOfBirth,className,parentEmail,parentPhone,parentName,address
+2025-001,Tawanda,Moyo,M,2012-03-14,Grade 5A,tawanda.moyo@example.com,0771000001,Tinashe Moyo,Harare
+2025-002,Nyasha,Chikore,F,2012-07-21,Grade 5A,nyasha.chikore@example.com,0771000002,Chipo Chikore,Harare
+2025-003,Kudzai,Sibanda,M,2011-11-02,Grade 6B,kudzai.sibanda@example.com,0771000003,Nomsa Sibanda,Bulawayo
+2025-004,Ruvimbo,Mapfumo,F,2013-01-19,Grade 4A,ruvimbo.mapfumo@example.com,0771000004,Grace Mapfumo,Mutare
+2025-005,Brian,Ncube,M,2011-05-08,Grade 6A,brian.ncube@example.com,0771000005,Thandi Ncube,Bulawayo
+2025-006,Chipo,Makoni,F,2012-09-30,Grade 5B,chipo.makoni@example.com,0771000006,Joyce Makoni,Gweru
+2025-007,Farai,Mutasa,M,2010-02-12,Grade 7A,farai.mutasa@example.com,0771000007,Peter Mutasa,Masvingo
+2025-008,Tatenda,Murwira,F,2010-06-18,Grade 7A,tatenda.murwira@example.com,0771000008,Sarah Murwira,Masvingo
+2025-009,Nigel,Dube,M,2013-04-25,Grade 4B,nigel.dube@example.com,0771000009,Elizabeth Dube,Bulawayo
+2025-010,Shamiso,Chirwa,F,2012-12-05,Grade 5C,shamiso.chirwa@example.com,0771000010,Memory Chirwa,Chitungwiza
+2025-011,Allen,Munetsi,M,2011-08-11,Grade 6B,allen.munetsi@example.com,0771000011,John Munetsi,Harare
+2025-012,Linda,Chisango,F,2013-10-01,Grade 4A,linda.chisango@example.com,0771000012,Mary Chisango,Marondera
+2025-013,Blessing,Mapondera,M,2010-01-17,Grade 7B,blessing.mapondera@example.com,0771000013,Alice Mapondera,Gweru
+2025-014,Rutendo,Mhungu,F,2012-06-22,Grade 5A,rutendo.mhungu@example.com,0771000014,Catherine Mhungu,Harare
+2025-015,Sean,Mlambo,M,2011-09-09,Grade 6A,sean.mlambo@example.com,0771000015,Dorothy Mlambo,Bulawayo

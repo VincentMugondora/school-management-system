@@ -51,6 +51,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       },
     });
 
+    console.log('[Import Commit] Admin:', { id: admin?.id, schoolId: admin?.schoolId, role: admin?.role });
+
     if (!admin) {
       return NextResponse.json(
         { error: 'Not found', message: 'User not found' },
@@ -247,6 +249,13 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     );
 
     // Step 9: Return success/failure report
+    console.log('[Import Commit] Result:', {
+      schoolId: admin.schoolId,
+      successCount: importResult.successCount,
+      failureCount: importResult.failureCount,
+      totalRows: importResult.totalRows,
+    });
+
     return NextResponse.json({
       success: importResult.successCount > 0,
       imported: importResult.successCount > 0,

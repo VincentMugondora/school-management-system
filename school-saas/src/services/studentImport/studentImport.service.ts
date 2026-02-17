@@ -91,6 +91,12 @@ export const StudentImportService = {
 
     // Step 1: Verify admin and get school context
     const context = await this.verifyAdminAndGetContext(adminUserId, academicYearId);
+    console.log('[StudentImportService] Import context:', {
+      userId: context.userId,
+      schoolId: context.schoolId,
+      role: context.role,
+      rowCount: rows.length,
+    });
 
     // Step 2: Pre-validate all rows and resolve class IDs (outside transaction)
     const { resolvedRows, validationErrors } = await this.preValidateAndResolve(
@@ -188,6 +194,7 @@ export const StudentImportService = {
           // If we reach here, all rows succeeded
           result.successCount = resolvedRows.length;
           result.successfulRowNumbers = successfulRows;
+          console.log(`[StudentImportService] Successfully created ${successfulRows.length} students in school ${context.schoolId}`);
         },
         {
           isolationLevel: Prisma.TransactionIsolationLevel.Serializable,

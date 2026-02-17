@@ -140,11 +140,18 @@ export async function listStudents(
 ): Promise<{ success: true; data: { students: Student[]; total: number } } | { success: false; error: string }> {
   try {
     const context = await getCurrentUser();
-    if (!context) return { success: false, error: 'Unauthorized' };
+    console.log('[listStudents] Context:', context);
+    
+    if (!context) {
+      console.log('[listStudents] No context - returning Unauthorized');
+      return { success: false, error: 'Unauthorized' };
+    }
 
     const result = await StudentService.listStudents(context, filters);
+    console.log(`[listStudents] Found ${result.total} students for school ${context.schoolId}`);
     return { success: true, data: result };
   } catch (error) {
+    console.error('[listStudents] Error:', error);
     return handleServiceError(error);
   }
 }
