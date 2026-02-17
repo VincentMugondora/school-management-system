@@ -20,13 +20,34 @@ export async function createUserProfile(input: CreateUserProfileInput) {
       return { success: false, error: 'Email, first name, and last name are required' };
     }
 
-    // Check if user already exists
+    // Check if user already exists by clerkId
     const existingUser = await prisma.user.findUnique({
       where: { clerkId: input.clerkId },
     });
 
     if (existingUser) {
       return { success: false, error: 'User profile already exists' };
+    }
+
+    // Check if user exists by email (seeded user case)
+    const existingByEmail = await prisma.user.findUnique({
+      where: { email: input.email },
+    });
+
+    if (existingByEmail) {
+      // Update the seeded user with the real clerkId
+      const updated = await prisma.user.update({
+        where: { id: existingByEmail.id },
+        data: {
+          clerkId: input.clerkId,
+          firstName: input.firstName,
+          lastName: input.lastName,
+          role: Role.SUPER_ADMIN,
+          status: 'APPROVED',
+          approvedAt: new Date(),
+        },
+      });
+      return { success: true, data: updated };
     }
 
     // Determine role - first user becomes SUPER_ADMIN

@@ -80,10 +80,17 @@ async function seedSuperAdmin() {
   }
 
   try {
-    // Check if user already exists
-    const existingUser = await prisma.user.findUnique({
+    // Check if user already exists by clerkId
+    let existingUser = await prisma.user.findUnique({
       where: { clerkId },
     });
+
+    // If not found by clerkId, check by email
+    if (!existingUser) {
+      existingUser = await prisma.user.findUnique({
+        where: { email },
+      });
+    }
 
     if (existingUser) {
       if (existingUser.role === Role.SUPER_ADMIN && existingUser.status === UserStatus.APPROVED) {
@@ -93,8 +100,9 @@ async function seedSuperAdmin() {
 
       // Update existing user to SuperAdmin if needed
       const updated = await prisma.user.update({
-        where: { clerkId },
+        where: { id: existingUser.id },
         data: {
+          clerkId, // Update clerkId in case it changed
           role: Role.SUPER_ADMIN,
           status: UserStatus.APPROVED,
           approvedAt: new Date(),
