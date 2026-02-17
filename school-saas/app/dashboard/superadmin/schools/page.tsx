@@ -13,8 +13,6 @@ import {
   Users,
   GraduationCap,
   Calendar,
-  LayoutDashboard,
-  Shield,
 } from 'lucide-react';
 
 /**
