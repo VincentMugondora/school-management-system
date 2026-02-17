@@ -252,13 +252,22 @@ export default async function SchoolsListPage({
                         </span>
                       </td>
                       <td className="px-6 py-4 text-center">
-                        <Link
-                          href={`/dashboard/superadmin/schools/${school.id}`}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors font-medium text-sm"
-                        >
-                          <Eye className="w-4 h-4" />
-                          View
-                        </Link>
+                        <div className="flex items-center justify-center gap-2">
+                          <Link
+                            href={`/dashboard/superadmin/schools/${school.id}`}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors font-medium text-sm"
+                          >
+                            <Eye className="w-4 h-4" />
+                            View Dashboard
+                          </Link>
+                          <Link
+                            href={`/dashboard/superadmin/schools/${school.id}?tab=admins`}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors font-medium text-sm"
+                          >
+                            <Users className="w-4 h-4" />
+                            Manage Admins
+                          </Link>
+                        </div>
                       </td>
                     </tr>
                   );
