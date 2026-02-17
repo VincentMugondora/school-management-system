@@ -182,10 +182,25 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       existingStudents.map((s) => s.studentId).filter(Boolean) as string[]
     );
 
+    console.log('[Import Commit] Validation context:', {
+      schoolId: admin.schoolId,
+      classCount: classes.length,
+      classNames: Array.from(existingClassNames),
+      existingStudentCount: existingStudents.length,
+      academicYear: academicYear.name,
+    });
+
     const validationResult = validateStudentRows(parseResult.rows, {
       existingClassNames,
       academicYear: academicYear.name,
       existingAdmissionNumbers,
+    });
+
+    console.log('[Import Commit] Validation result:', {
+      totalRows: validationResult.totalRows,
+      validCount: validationResult.validCount,
+      invalidCount: validationResult.invalidCount,
+      errorsByRow: Object.fromEntries(validationResult.errorsByRow),
     });
 
     // Block if any validation errors
