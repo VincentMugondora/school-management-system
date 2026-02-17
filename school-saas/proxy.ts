@@ -1,6 +1,7 @@
 import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
 import { NextResponse } from 'next/server';
 import { onboardingGuard, pathRequiresOnboarding, isOnboardingPath } from './src/lib/auth/onboardingGuard';
+import { approvalGuard, pathRequiresApproval, isApprovalPath } from './src/lib/auth/approvalGuard';
 
 const isProtectedRoute = createRouteMatcher([
   '/dashboard(.*)',
@@ -34,6 +35,14 @@ export default clerkMiddleware(async (auth, req) => {
     const onboardingRedirect = await onboardingGuard(req, userId);
     if (onboardingRedirect) {
       return onboardingRedirect;
+    }
+  }
+
+  // Check approval status for dashboard routes
+  if (userId && pathRequiresApproval(req.nextUrl.pathname) && !isApprovalPath(req.nextUrl.pathname)) {
+    const approvalRedirect = await approvalGuard(req, userId);
+    if (approvalRedirect) {
+      return approvalRedirect;
     }
   }
 });
