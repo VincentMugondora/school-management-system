@@ -132,6 +132,7 @@ model User {
   @@index([schoolId])
   @@index([clerkId])
   @@index([status])
+  @@index([status, schoolId])
 }
 
 // ============================================
