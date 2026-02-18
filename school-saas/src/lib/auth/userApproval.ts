@@ -112,6 +112,10 @@ export async function approveUser(
 
   // Check approval permissions
   if (approverRole !== Role.SUPER_ADMIN) {
+    // Non-superadmin cannot approve SUPERADMIN users
+    if (user.role === Role.SUPER_ADMIN) {
+      throw new Error('You cannot approve Super Administrator users');
+    }
     // Non-superadmin can only approve users in their own school
     if (user.schoolId !== approverSchoolId) {
       throw new Error('You can only approve users in your school');
