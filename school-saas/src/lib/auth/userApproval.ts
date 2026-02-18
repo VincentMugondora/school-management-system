@@ -170,6 +170,11 @@ export async function rejectUser(
 
   // Check permissions
   if (approverRole !== Role.SUPER_ADMIN) {
+    // Non-superadmin cannot reject SUPERADMIN users
+    if (user.role === Role.SUPER_ADMIN) {
+      throw new Error('You cannot reject Super Administrator users');
+    }
+    // Non-superadmin can only reject users in their own school
     if (user.schoolId !== approverSchoolId) {
       throw new Error('You can only reject users in your school');
     }
