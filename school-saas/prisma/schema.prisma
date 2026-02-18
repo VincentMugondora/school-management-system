@@ -102,6 +102,7 @@ model School {
   payments      Payment[]
   auditLogs     AuditLog[]
   subscriptions Subscription[]
+  approvalAuditLogs ApprovalAuditLog[]
 
   @@index([slug])
 }
@@ -128,6 +129,8 @@ model User {
   auditLogs AuditLog[]
   approvedBy User?  @relation("UserApprovals", fields: [approvedById], references: [id])
   approvals  User[]  @relation("UserApprovals")
+  approvalAuditsAsTarget ApprovalAuditLog[] @relation("ApprovalTargetUser")
+  approvalAuditsAsApprover ApprovalAuditLog[] @relation("ApprovalApprover")
 
   @@index([schoolId])
   @@index([clerkId])
@@ -540,4 +543,33 @@ model AuditLog {
   @@index([schoolId])
   @@index([userId])
   @@index([createdAt])
+}
+
+/**
+ * Approval Audit Log
+ * Specialized audit trail for user approval/rejection actions
+ * Used for compliance review and SuperAdmin audit reports
+ */
+model ApprovalAuditLog {
+  id           String   @id @default(uuid())
+  targetUserId String
+  action       String   // APPROVE, REJECT
+  approvedBy   String
+  schoolId     String?
+  targetRole   String?
+  reason       String?
+  ipAddress    String?
+  userAgent    String?
+  createdAt    DateTime @default(now())
+
+  // Relations
+  targetUser User @relation("ApprovalTargetUser", fields: [targetUserId], references: [id], onDelete: Cascade)
+  approver   User @relation("ApprovalApprover", fields: [approvedBy], references: [id], onDelete: Cascade)
+  school     School? @relation(fields: [schoolId], references: [id], onDelete: SetNull)
+
+  @@index([targetUserId])
+  @@index([approvedBy])
+  @@index([schoolId])
+  @@index([createdAt])
+  @@index([action])
 }
