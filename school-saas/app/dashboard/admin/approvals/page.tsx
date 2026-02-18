@@ -5,7 +5,7 @@ import { Role, UserStatus } from '@prisma/client';
 import {
   approveUser,
   rejectUser,
-} from '@/lib/auth/userApproval';
+} from '@/src/lib/auth/userApproval';
 import {
   Users,
   UserCheck,

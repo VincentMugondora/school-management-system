@@ -3,7 +3,7 @@ import { auth } from '@clerk/nextjs/server';
 import { prisma } from '@/lib/db';
 import { Role, UserStatus } from '@prisma/client';
 import { z } from 'zod';
-import { rejectUser } from '@/lib/auth/userApproval';
+import { rejectUser } from '@/src/lib/auth/userApproval';
 
 /**
  * POST /api/approvals/reject

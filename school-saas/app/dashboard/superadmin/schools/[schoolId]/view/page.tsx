@@ -6,7 +6,7 @@ import { Role, SchoolStatus } from '@prisma/client';
 import {
   createDelegatedContext,
   verifySuperAdminIdentity,
-} from '@/lib/auth/superadminContext';
+} from '@/src/lib/auth/superadminContext';
 import {
   Building2,
   ArrowLeft,

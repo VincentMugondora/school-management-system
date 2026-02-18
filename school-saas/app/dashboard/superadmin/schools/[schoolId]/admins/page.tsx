@@ -1,4 +1,7 @@
-import { prisma } from '@/lib/db';
+import {
+  approveUser,
+  rejectUser,
+} from '@/src/lib/auth/userApproval';
 import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
 import { auth } from '@clerk/nextjs/server';
@@ -6,7 +9,7 @@ import { Role, SchoolStatus } from '@prisma/client';
 import {
   createDelegatedContext,
   verifySuperAdminIdentity,
-} from '@/lib/auth/superadminContext';
+} from '@/src/lib/auth/superadminContext';
 import {
   Users,
   ArrowLeft,

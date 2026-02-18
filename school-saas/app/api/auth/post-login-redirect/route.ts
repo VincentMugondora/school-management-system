@@ -3,7 +3,7 @@ import { auth } from '@clerk/nextjs/server';
 import {
   getPostLoginRedirect,
   isPostLoginEntryPath,
-} from '@/lib/auth/postLoginRedirect';
+} from '@/src/lib/auth/postLoginRedirect';
 
 /**
  * GET /api/auth/post-login-redirect
