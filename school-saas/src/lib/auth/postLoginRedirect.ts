@@ -59,6 +59,15 @@ export async function getPostLoginRedirect(
     };
   }
 
+  if (user.role === Role.SUPER_ADMIN) {
+    return {
+      redirectUrl: '/dashboard/superadmin',
+      isApproved: true,
+      status: UserStatus.APPROVED,
+      role: user.role,
+    };
+  }
+
   // Check approval status
   if (user.status !== UserStatus.APPROVED) {
     // Not approved - redirect to waiting page

@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { onboardingGuard, pathRequiresOnboarding, isOnboardingPath } from './src/lib/auth/onboardingGuard';
 import { approvalGuard, pathRequiresApproval, isApprovalPath } from './src/lib/auth/approvalGuard';
 import { getPostLoginRedirect, isPostLoginEntryPath } from './src/lib/auth/postLoginRedirect';
+import { prisma } from './lib/db';
 
 const isProtectedRoute = createRouteMatcher([
   '/dashboard(.*)',
@@ -38,6 +39,23 @@ export default clerkMiddleware(async (auth, req) => {
     // Only redirect if we're not already at the target URL
     if (redirectResult.redirectUrl !== req.nextUrl.pathname) {
       return NextResponse.redirect(new URL(redirectResult.redirectUrl, req.url));
+    }
+  }
+
+  // SUPER_ADMIN bypass: never force school onboarding or approval waiting
+  if (userId) {
+    try {
+      const user = await prisma.user.findUnique({
+        where: { clerkId: userId },
+        select: { role: true },
+      });
+
+      if (user?.role === 'SUPER_ADMIN') {
+        return NextResponse.next();
+      }
+    } catch {
+      // Fail open on DB issues to avoid blocking requests
+      return NextResponse.next();
     }
   }
 

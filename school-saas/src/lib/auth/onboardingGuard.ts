@@ -31,7 +31,7 @@ export interface OnboardingCheckResult {
 
 /**
  * Check if a user needs to complete school onboarding.
- * ADMIN and SUPER_ADMIN users without a schoolId must create a school first.
+ * ADMIN users without a schoolId must create a school first.
  *
  * @param userId - The authenticated user's ID (from Clerk)
  * @returns Onboarding check result
@@ -54,8 +54,8 @@ export async function checkOnboardingStatus(
     };
   }
 
-  // Only admins need school onboarding
-  const isAdmin = user.role === Role.ADMIN || user.role === Role.SUPER_ADMIN;
+  // Only school admins need school onboarding
+  const isAdmin = user.role === Role.ADMIN;
 
   if (!isAdmin) {
     // Non-admin users don't need school onboarding

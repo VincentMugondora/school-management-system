@@ -44,7 +44,6 @@ export default function OnboardingWaitingPage() {
   // Initial load
   useEffect(() => {
     fetchStatus();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Poll every 10 seconds
@@ -67,7 +66,7 @@ export default function OnboardingWaitingPage() {
       } else {
         setError(result.error || 'Failed to check status');
       }
-    } catch (_err) {
+    } catch {
       setError('Unable to check approval status');
     } finally {
       setLoading(false);

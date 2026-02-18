@@ -22,6 +22,10 @@ export default async function DashboardPage() {
     redirect('/setup');
   }
 
+  if (user.role === Role.SUPER_ADMIN) {
+    redirect('/dashboard/superadmin');
+  }
+
   if (user.status === 'PENDING') {
     redirect('/onboarding/waiting');
   }
@@ -32,8 +36,6 @@ export default async function DashboardPage() {
 
   // Redirect based on role
   switch (user?.role) {
-    case Role.SUPER_ADMIN:
-      redirect('/dashboard/superadmin');
     case Role.ADMIN:
       if (!user.schoolId) {
         redirect('/onboarding/school');
