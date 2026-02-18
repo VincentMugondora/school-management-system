@@ -64,12 +64,6 @@ export default function OnboardingWaitingPage() {
 
       if (result.success && result.data) {
         setStatus(result.data);
-
-        // Auto-redirect if approved
-        if (result.data.status === 'APPROVED') {
-          router.push('/dashboard');
-          return;
-        }
       } else {
         setError(result.error || 'Failed to check status');
       }
@@ -91,11 +85,6 @@ export default function OnboardingWaitingPage() {
       if (result.success && result.data) {
         setStatus(result.data);
         setLastChecked(new Date());
-
-        // Auto-redirect on approval
-        if (result.data.status === 'APPROVED') {
-          router.push('/dashboard');
-        }
       }
     } catch (err) {
       console.error('Polling error:', err);
@@ -141,6 +130,7 @@ export default function OnboardingWaitingPage() {
   }
 
   const approver = status?.role === 'SUPER_ADMIN' ? 'Super Administrator' : 'School Administrator';
+  const isApproved = status?.status === 'APPROVED';
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12">
@@ -212,10 +202,29 @@ export default function OnboardingWaitingPage() {
                 </li>
                 <li className="flex items-start gap-2">
                   <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
-                  <span>This page will automatically redirect you once approved</span>
+                  <span>Once approved, you can proceed to your dashboard</span>
                 </li>
               </ul>
             </div>
+
+            {isApproved && (
+              <div className="mb-6 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-4">
+                <p className="text-sm font-medium text-emerald-900">
+                  Your account is approved.
+                </p>
+                <p className="mt-1 text-sm text-emerald-800">
+                  Continue to your dashboard.
+                </p>
+                <div className="mt-4">
+                  <button
+                    onClick={() => router.push('/dashboard')}
+                    className="w-full rounded-lg bg-emerald-600 px-4 py-2.5 font-medium text-white hover:bg-emerald-700"
+                  >
+                    Go to Dashboard
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Polling Status */}
             <div className="mb-6 flex items-center justify-center gap-2 text-xs text-gray-500">
