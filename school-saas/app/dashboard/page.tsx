@@ -11,10 +11,10 @@ export default async function DashboardPage() {
     redirect('/sign-in');
   }
 
-  // Get user from database to check role
+  // Get user from database to check status/role routing
   const user = await prisma.user.findUnique({
     where: { clerkId: userId },
-    select: { role: true },
+    select: { role: true, status: true, schoolId: true },
   });
 
   // If user exists in Clerk but not in our database, redirect to setup
@@ -22,10 +22,22 @@ export default async function DashboardPage() {
     redirect('/setup');
   }
 
+  if (user.status === 'PENDING') {
+    redirect('/onboarding/waiting');
+  }
+
+  if (user.status === 'REJECTED' || user.status === 'SUSPENDED') {
+    redirect('/onboarding/rejected');
+  }
+
   // Redirect based on role
   switch (user?.role) {
     case Role.SUPER_ADMIN:
+      redirect('/dashboard/superadmin');
     case Role.ADMIN:
+      if (!user.schoolId) {
+        redirect('/onboarding/school');
+      }
       redirect('/dashboard/admin');
     case Role.TEACHER:
       redirect('/dashboard/teacher');
