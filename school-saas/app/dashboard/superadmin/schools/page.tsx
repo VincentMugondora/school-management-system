@@ -31,6 +31,15 @@ import { revalidatePath } from 'next/cache';
 
 const ITEMS_PER_PAGE = 10;
 
+async function updateSchoolStatus(schoolId: string, status: SchoolStatus) {
+  'use server';
+  await prisma.school.update({
+    where: { id: schoolId },
+    data: { status },
+  });
+  revalidatePath('/dashboard/superadmin/schools');
+}
+
 interface SchoolsPageProps {
   searchParams: Promise<{ page?: string; search?: string; status?: string }>;
 }
@@ -194,6 +203,7 @@ export default async function SchoolsListPage({
             <Filter className="w-5 h-5 text-gray-400" />
             <select
               name="status"
+              aria-label="Filter by status"
               defaultValue={statusFilter || 'ALL'}
               className="px-4 py-2.5 bg-gray-50 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-300"
             >
@@ -286,7 +296,7 @@ export default async function SchoolsListPage({
                     <tr key={school.id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-6 py-4">
                         <div className="flex items-start gap-3">
-                          <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center shrink-0">
                             <Building2 className="w-5 h-5 text-indigo-600" />
                           </div>
                           <div>
