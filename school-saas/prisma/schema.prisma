@@ -129,8 +129,10 @@ model User {
   auditLogs AuditLog[]
   approvedBy User?  @relation("UserApprovals", fields: [approvedById], references: [id])
   approvals  User[]  @relation("UserApprovals")
-  approvalAuditsAsTarget ApprovalAuditLog[] @relation("ApprovalTargetUser")
+  approvalAuditsAsTarget   ApprovalAuditLog[] @relation("ApprovalTargetUser")
   approvalAuditsAsApprover ApprovalAuditLog[] @relation("ApprovalApprover")
+  impersonationSessionsAsAdmin   ImpersonationSession[] @relation("ImpersonationAdmin")
+  impersonationSessionsAsTarget  ImpersonationSession[] @relation("ImpersonationTarget")
 
   @@index([schoolId])
   @@index([clerkId])
@@ -572,4 +574,23 @@ model ApprovalAuditLog {
   @@index([schoolId])
   @@index([createdAt])
   @@index([action])
+}
+
+model ImpersonationSession {
+  id           String    @id @default(uuid())
+  adminId      String    // SUPER_ADMIN who started the session
+  targetUserId String    // User being impersonated
+  startedAt    DateTime  @default(now())
+  expiresAt    DateTime
+  endedAt      DateTime?
+  ipAddress    String?
+  userAgent    String?
+
+  // Relations
+  admin      User @relation("ImpersonationAdmin", fields: [adminId], references: [id], onDelete: Cascade)
+  targetUser User @relation("ImpersonationTarget", fields: [targetUserId], references: [id], onDelete: Cascade)
+
+  @@index([adminId])
+  @@index([targetUserId])
+  @@index([expiresAt])
 }
