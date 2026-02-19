@@ -576,6 +576,33 @@ model ApprovalAuditLog {
   @@index([action])
 }
 
+model ImpersonationAuditLog {
+  id                String    @id @default(uuid())
+  sessionId         String    // Reference to ImpersonationSession
+  adminId           String    // SUPER_ADMIN who performed impersonation
+  impersonatedSchoolId String?  // School being impersonated (if applicable)
+  impersonatedUserId   String?  // User being impersonated (if applicable)
+  
+  // Session lifecycle
+  startedAt         DateTime  @default(now())
+  endedAt           DateTime?
+  
+  // Action tracking
+  actionsCount      Int       @default(0)
+  
+  // Metadata
+  ipAddress         String?
+  userAgent         String?
+  
+  // Relations
+  admin             User      @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  
+  @@index([adminId])
+  @@index([sessionId])
+  @@index([startedAt])
+  @@index([endedAt])
+}
+
 model ImpersonationSession {
   id           String    @id @default(uuid())
   adminId      String    // SUPER_ADMIN who started the session
