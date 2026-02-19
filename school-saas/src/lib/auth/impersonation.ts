@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/db';
 import { Role, UserStatus } from '@prisma/client';
-import { auth } from '@clerk/nextjs/server';
+import { auth, clerkClient } from '@clerk/nextjs/server';
 import { headers } from 'next/headers';
 
 // Session expiry in hours
@@ -117,6 +117,22 @@ export async function startImpersonation(
     },
   });
 
+  // Store impersonation context in Clerk privateMetadata (server-side only)
+  // This automatically clears on logout and cannot be modified client-side
+  await clerkClient.users.updateUser(adminClerkId, {
+    privateMetadata: {
+      impersonation: {
+        sessionId: session.id,
+        targetUserId: targetUser.id,
+        targetRole: targetUser.role,
+        targetSchoolId: targetUser.schoolId,
+        schoolName: targetUser.school?.name || null,
+        startedAt: new Date().toISOString(),
+        isImpersonating: true,
+      },
+    },
+  });
+
   return {
     success: true,
     context: {
@@ -182,6 +198,13 @@ export async function endImpersonation(sessionId: string): Promise<boolean> {
     },
   });
 
+  // Clear impersonation context from Clerk privateMetadata
+  await clerkClient.users.updateUser(clerkId, {
+    privateMetadata: {
+      impersonation: null,
+    },
+  });
+
   return true;
 }
 
@@ -207,32 +230,58 @@ export async function getActiveImpersonationSession(
 
 /**
  * Check if user has active impersonation and return context
+ * Reads from Clerk session claims first (fast), validates against database
  */
-export async function getImpersonationContext(
-  adminClerkId: string
-): Promise<ImpersonationContext | null> {
-  const admin = await prisma.user.findUnique({
-    where: { clerkId: adminClerkId },
-    select: { id: true, role: true },
-  });
+export async function getImpersonationContextFromSession() {
+  const { userId, sessionClaims } = await auth();
 
-  if (!admin || admin.role !== Role.SUPER_ADMIN) {
+  if (!userId) {
     return null;
   }
 
-  const session = await getActiveImpersonationSession(admin.id);
+  // Check Clerk privateMetadata for impersonation context
+  const impersonation = sessionClaims?.impersonation as {
+    sessionId: string;
+    targetUserId: string;
+    targetRole: Role;
+    targetSchoolId: string | null;
+    schoolName: string | null;
+    startedAt: string;
+    isImpersonating: boolean;
+  } | undefined;
 
-  if (!session) {
+  if (!impersonation || !impersonation.isImpersonating) {
+    return null;
+  }
+
+  // Validate session still exists and is active in database
+  const dbSession = await prisma.impersonationSession.findFirst({
+    where: {
+      id: impersonation.sessionId,
+      endedAt: null,
+      expiresAt: { gt: new Date() },
+    },
+  });
+
+  if (!dbSession) {
+    // Session expired or ended - clear metadata
+    await clerkClient.users.updateUser(userId, {
+      privateMetadata: {
+        impersonation: null,
+      },
+    });
     return null;
   }
 
   return {
     isImpersonating: true,
-    originalUserId: admin.id,
-    targetUserId: session.targetUser.id,
-    targetRole: session.targetUser.role,
-    targetSchoolId: session.targetUser.schoolId,
-    sessionId: session.id,
+    originalUserId: userId,
+    targetUserId: impersonation.targetUserId,
+    targetRole: impersonation.targetRole,
+    targetSchoolId: impersonation.targetSchoolId,
+    schoolName: impersonation.schoolName,
+    sessionId: impersonation.sessionId,
+    startedAt: impersonation.startedAt,
   };
 }
 
