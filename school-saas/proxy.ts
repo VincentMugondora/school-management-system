@@ -58,6 +58,11 @@ export default clerkMiddleware(async (auth, req) => {
         const impersonationContext = await getImpersonationContextFromSession();
         
         if (impersonationContext) {
+          // IMPERSONATION GUARD: Prevent access to superadmin dashboard while impersonating
+          if (req.nextUrl.pathname.startsWith('/dashboard/superadmin')) {
+            return NextResponse.redirect(new URL('/dashboard/admin', req.url));
+          }
+
           // Add impersonation context to request headers for downstream use
           const requestHeaders = new Headers(req.headers);
           requestHeaders.set('x-impersonating', 'true');
@@ -66,6 +71,8 @@ export default clerkMiddleware(async (auth, req) => {
           requestHeaders.set('x-impersonation-target-role', impersonationContext.targetRole);
           requestHeaders.set('x-impersonation-school-id', impersonationContext.targetSchoolId || '');
           requestHeaders.set('x-impersonation-school-name', impersonationContext.schoolName || '');
+          // Treat as ADMIN role during impersonation
+          requestHeaders.set('x-effective-role', Role.ADMIN);
           
           return NextResponse.next({
             request: {
