@@ -5,10 +5,12 @@ import { useRouter } from 'next/navigation';
 import { Role } from '@prisma/client';
 
 interface ImpersonationBannerProps {
-  targetUserId: string;
-  targetRole: Role;
+  targetUserId?: string;
+  targetRole?: Role;
   targetName?: string;
   sessionId: string;
+  schoolName?: string;
+  isSchoolContext?: boolean;
 }
 
 export function ImpersonationBanner({
@@ -16,6 +18,8 @@ export function ImpersonationBanner({
   targetRole,
   targetName,
   sessionId,
+  schoolName,
+  isSchoolContext = false,
 }: ImpersonationBannerProps) {
   const router = useRouter();
   const [isEnding, setIsEnding] = useState(false);
@@ -23,15 +27,11 @@ export function ImpersonationBanner({
   const handleEndImpersonation = async () => {
     setIsEnding(true);
     try {
-      const response = await fetch('/api/admin/impersonate/end', {
+      const response = await fetch('/api/superadmin/impersonate/exit', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ sessionId }),
       });
 
-      if (response.ok) {
+      if (response.ok || response.status === 302) {
         router.push('/dashboard/superadmin');
         router.refresh();
       } else {
@@ -52,6 +52,10 @@ export function ImpersonationBanner({
     PARENT: 'bg-pink-600',
     ACCOUNTANT: 'bg-orange-600',
   };
+
+  const displayText = isSchoolContext
+    ? `VIEWING: ${schoolName || 'Unknown School'}`
+    : `IMPERSONATING: ${targetName || targetUserId?.substring(0, 8)}...`;
 
   return (
     <div className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-red-600 via-orange-500 to-red-600 text-white shadow-lg">
@@ -76,14 +80,19 @@ export function ImpersonationBanner({
               d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
             />
           </svg>
-          <span className="font-semibold text-sm">
-            IMPERSONATING: {targetName || targetUserId.substring(0, 8)}...
-          </span>
-          <span
-            className={`px-2 py-0.5 rounded text-xs font-medium ${roleColors[targetRole]} bg-opacity-90`}
-          >
-            {targetRole.replace('_', ' ')}
-          </span>
+          <span className="font-semibold text-sm">{displayText}</span>
+          {targetRole && !isSchoolContext && (
+            <span
+              className={`px-2 py-0.5 rounded text-xs font-medium ${roleColors[targetRole]} bg-opacity-90`}
+            >
+              {targetRole.replace('_', ' ')}
+            </span>
+          )}
+          {isSchoolContext && (
+            <span className="px-2 py-0.5 rounded text-xs font-medium bg-blue-600 bg-opacity-90">
+              ADMIN VIEW
+            </span>
+          )}
         </div>
 
         <button

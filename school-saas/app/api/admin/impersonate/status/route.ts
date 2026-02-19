@@ -1,10 +1,9 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
-import { getImpersonationContext } from '@/lib/auth/impersonation';
 
 export async function GET() {
   try {
-    const { userId: clerkId } = await auth();
+    const { userId: clerkId, sessionClaims } = await auth();
 
     if (!clerkId) {
       return NextResponse.json(
@@ -13,9 +12,17 @@ export async function GET() {
       );
     }
 
-    const context = await getImpersonationContext(clerkId);
+    // Read impersonation context from Clerk session claims
+    const impersonation = sessionClaims?.impersonation as {
+      isImpersonating: boolean;
+      sessionId: string;
+      targetUserId: string;
+      targetRole: string;
+      schoolName: string;
+      isSchoolContext: boolean;
+    } | undefined;
 
-    if (!context) {
+    if (!impersonation?.isImpersonating) {
       return NextResponse.json({
         isImpersonating: false,
       });
@@ -23,9 +30,11 @@ export async function GET() {
 
     return NextResponse.json({
       isImpersonating: true,
-      sessionId: context.sessionId,
-      targetUserId: context.targetUserId,
-      targetRole: context.targetRole,
+      sessionId: impersonation.sessionId,
+      targetUserId: impersonation.targetUserId,
+      targetRole: impersonation.targetRole,
+      schoolName: impersonation.schoolName,
+      isSchoolContext: impersonation.isSchoolContext,
     });
   } catch (error) {
     console.error('Error checking impersonation status:', error);

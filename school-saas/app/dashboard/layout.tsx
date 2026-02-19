@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { currentUser } from '@clerk/nextjs/server';
 import { prisma } from '@/lib/db';
 import { Role } from '@prisma/client';
+import { GlobalImpersonationProvider } from '@/components/impersonation/GlobalImpersonationProvider';
 
 /**
  * Dashboard Root Layout
@@ -45,6 +46,10 @@ export default async function DashboardLayout({
     redirect('/onboarding/school');
   }
 
-  // User has school or doesn't need one - render dashboard
-  return <>{children}</>;
+  // Wrap with impersonation provider for global banner support
+  return (
+    <GlobalImpersonationProvider>
+      {children}
+    </GlobalImpersonationProvider>
+  );
 }
