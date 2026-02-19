@@ -1,5 +1,6 @@
 import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
 import { NextResponse } from 'next/server';
+import { Role } from '@prisma/client';
 import { onboardingGuard, pathRequiresOnboarding, isOnboardingPath } from './src/lib/auth/onboardingGuard';
 import { approvalGuard, pathRequiresApproval, isApprovalPath } from './src/lib/auth/approvalGuard';
 import { getPostLoginRedirect, isPostLoginEntryPath } from './src/lib/auth/postLoginRedirect';
@@ -50,7 +51,8 @@ export default clerkMiddleware(async (auth, req) => {
         select: { role: true },
       });
 
-      if (user?.role === 'SUPER_ADMIN') {
+      // Check if SUPER_ADMIN (handle both enum and string comparison)
+      if (user?.role === 'SUPER_ADMIN' || user?.role === Role.SUPER_ADMIN) {
         return NextResponse.next();
       }
     } catch {
