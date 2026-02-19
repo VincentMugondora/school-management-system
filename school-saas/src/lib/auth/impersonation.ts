@@ -105,15 +105,15 @@ export async function startImpersonation(
     data: {
       userId: admin.id,
       action: 'IMPERSONATION_START',
-      entityType: 'User',
+      entity: 'User',
       entityId: targetUser.id,
       details: JSON.stringify({
         sessionId: session.id,
         targetRole: targetUser.role,
         targetSchoolId: targetUser.schoolId,
+        userAgent,
       }),
       ipAddress,
-      userAgent,
     },
   });
 
@@ -175,11 +175,10 @@ export async function endImpersonation(sessionId: string): Promise<boolean> {
     data: {
       userId: admin.id,
       action: 'IMPERSONATION_END',
-      entityType: 'User',
+      entity: 'User',
       entityId: session.targetUserId,
-      details: JSON.stringify({ sessionId }),
+      details: JSON.stringify({ sessionId, userAgent }),
       ipAddress,
-      userAgent,
     },
   });
 
