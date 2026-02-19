@@ -4,6 +4,7 @@ import { Role } from '@prisma/client';
 import { onboardingGuard, pathRequiresOnboarding, isOnboardingPath } from './src/lib/auth/onboardingGuard';
 import { approvalGuard, pathRequiresApproval, isApprovalPath } from './src/lib/auth/approvalGuard';
 import { getPostLoginRedirect, isPostLoginEntryPath } from './src/lib/auth/postLoginRedirect';
+import { getImpersonationContext } from './src/lib/auth/impersonation';
 import { prisma } from './lib/db';
 
 const isProtectedRoute = createRouteMatcher([
@@ -53,6 +54,24 @@ export default clerkMiddleware(async (auth, req) => {
 
       // Check if SUPER_ADMIN (handle both enum and string comparison)
       if (user?.role === 'SUPER_ADMIN' || user?.role === Role.SUPER_ADMIN) {
+        // Check for active impersonation session
+        const impersonationContext = await getImpersonationContext(userId);
+        
+        if (impersonationContext) {
+          // Add impersonation context to request headers for downstream use
+          const requestHeaders = new Headers(req.headers);
+          requestHeaders.set('x-impersonating', 'true');
+          requestHeaders.set('x-impersonation-session-id', impersonationContext.sessionId);
+          requestHeaders.set('x-impersonation-target-user-id', impersonationContext.targetUserId);
+          requestHeaders.set('x-impersonation-target-role', impersonationContext.targetRole);
+          
+          return NextResponse.next({
+            request: {
+              headers: requestHeaders,
+            },
+          });
+        }
+        
         return NextResponse.next();
       }
     } catch {

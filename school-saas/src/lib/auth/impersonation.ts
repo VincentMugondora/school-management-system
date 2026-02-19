@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/db';
-import { Role, UserStatus, ImpersonationSession } from '@prisma/client';
+import { Role, UserStatus } from '@prisma/client';
 import { auth } from '@clerk/nextjs/server';
 import { headers } from 'next/headers';
 
@@ -190,7 +190,7 @@ export async function endImpersonation(sessionId: string): Promise<boolean> {
  */
 export async function getActiveImpersonationSession(
   adminId: string
-): Promise<ImpersonationSession | null> {
+): Promise<Awaited<ReturnType<typeof prisma.impersonationSession.findFirst>>> {
   return prisma.impersonationSession.findFirst({
     where: {
       adminId,
