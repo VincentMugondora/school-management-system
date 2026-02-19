@@ -304,3 +304,60 @@ export async function getImpersonationHistory(adminId?: string) {
     },
   });
 }
+
+/**
+ * Effective context resolution
+ * Returns the real user context with impersonation overrides applied
+ */
+export interface EffectiveContext {
+  realUserId: string;
+  realRole: Role;
+  effectiveRole: Role;
+  effectiveSchoolId: string | null;
+  isImpersonating: boolean;
+}
+
+export async function getEffectiveContext(): Promise<EffectiveContext | null> {
+  const { userId: clerkId, sessionClaims } = await auth();
+
+  if (!clerkId) {
+    return null;
+  }
+
+  // Get real user from database
+  const user = await prisma.user.findUnique({
+    where: { clerkId },
+    select: { id: true, role: true, schoolId: true },
+  });
+
+  if (!user) {
+    return null;
+  }
+
+  // Check for impersonation from Clerk session claims
+  const impersonation = sessionClaims?.impersonation as {
+    isImpersonating: boolean;
+    targetSchoolId: string | null;
+    targetRole: Role;
+  } | undefined;
+
+  // If impersonating, apply effective context rules
+  if (impersonation?.isImpersonating) {
+    return {
+      realUserId: user.id,
+      realRole: user.role,
+      effectiveRole: Role.ADMIN, // Impersonating = ADMIN context
+      effectiveSchoolId: impersonation.targetSchoolId,
+      isImpersonating: true,
+    };
+  }
+
+  // Normal context - use real values
+  return {
+    realUserId: user.id,
+    realRole: user.role,
+    effectiveRole: user.role,
+    effectiveSchoolId: user.schoolId,
+    isImpersonating: false,
+  };
+}
