@@ -14,7 +14,7 @@ import {
   StudentImportResult,
   ImportError,
   createEmptyImportResult,
-} from '@/domain/student/import';
+} from '@/src/domain/student/import';
 
 /**
  * Service context for authorization.
