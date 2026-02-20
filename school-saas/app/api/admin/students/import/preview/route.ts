@@ -13,8 +13,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAuth } from '@clerk/nextjs/server';
 import { prisma } from '@/lib/db';
 import { Role } from '@prisma/client';
-import { parseStudentCsv } from '@/lib/import/parseStudentCsv';
-import { validateStudentRows } from '@/services/studentImport/validateStudentRows';
+import { parseStudentCsv } from '@/src/lib/import/parseStudentCsv';
+import { validateStudentRows } from '@/src/services/studentImport/validateStudentRows';
 
 /**
  * Maximum file size for CSV uploads (5MB).

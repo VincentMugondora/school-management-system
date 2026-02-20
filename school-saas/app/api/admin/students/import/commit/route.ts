@@ -14,10 +14,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAuth } from '@clerk/nextjs/server';
 import { prisma } from '@/lib/db';
 import { Role } from '@prisma/client';
-import { parseStudentCsv } from '@/lib/import/parseStudentCsv';
-import { validateStudentRows } from '@/services/studentImport/validateStudentRows';
-import { StudentImportService } from '@/services/studentImport/studentImport.service';
-import { ImportError } from '@/domain/student/import';
+import { parseStudentCsv } from '@/src/lib/import/parseStudentCsv';
+import { validateStudentRows } from '@/src/services/studentImport/validateStudentRows';
+import { StudentImportService } from '@/src/services/studentImport/studentImport.service';
+import { ImportError } from '@/src/domain/student/import';
 
 /**
  * Maximum file size for CSV uploads (5MB).
