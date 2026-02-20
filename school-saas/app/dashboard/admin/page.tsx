@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Role } from '@prisma/client';
+import type { Role } from '@prisma/client';
 import { getCurrentUserProfile } from '@/app/actions/user.actions';
 import { listSchools } from '@/app/actions/school.actions';
 import { listTeachers } from '@/app/actions/teacher.actions';
@@ -138,12 +138,10 @@ export default function AdminDashboard() {
     }
   }
 
-  if (!user || (user.role !== Role.ADMIN && user.role !== Role.SUPER_ADMIN)) {
+  if (!user || (user.role !== 'ADMIN' && user.role !== 'SUPER_ADMIN')) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center text-red-600">
-          Access Denied. Only administrators can access this dashboard.
-        </div>
+        <div className="text-center text-red-600">Access Denied</div>
       </div>
     );
   }

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Role } from '@prisma/client';
+import type { Role } from '@prisma/client';
 import { getCurrentUserProfile } from '@/app/actions/user.actions';
 import Link from 'next/link';
 import { 

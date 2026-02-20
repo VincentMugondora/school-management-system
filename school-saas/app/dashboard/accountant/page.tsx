@@ -2,12 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import type { Role } from '@prisma/client';
-import { InvoiceStatus } from '@prisma/client';
 import { listInvoices, getFinancialSummary, applyPayment, updateInvoiceStatus, generateInvoices } from '@/app/actions/finance.actions';
 import { listEnrollmentsByClass } from '@/app/actions/student.actions';
 import { listClasses } from '@/app/actions/teacher.actions';
 import { listTerms } from '@/app/actions/academic.actions';
 import { getCurrentUserProfile } from '@/app/actions/user.actions';
+
+type InvoiceStatus = 'PAID' | 'PENDING' | 'OVERDUE' | 'PARTIAL' | 'CANCELLED';
 
 interface Invoice {
   id: string;

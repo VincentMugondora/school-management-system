@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Role } from '@prisma/client';
+import type { Role } from '@prisma/client';
 import { getTeacherDashboard } from '@/app/actions/teacher.actions';
 import { getCurrentUserProfile } from '@/app/actions/user.actions';
 
@@ -61,7 +61,7 @@ export default function TeacherDashboard() {
     );
   }
 
-  if (!user || user.role !== Role.TEACHER) {
+  if (!user || (user.role !== 'TEACHER' && user.role !== 'SUPER_ADMIN')) {
     return (
       <div className="p-6">
         <div className="text-center text-red-600">
