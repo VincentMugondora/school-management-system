@@ -158,7 +158,7 @@ export default function AccountantDashboard() {
         return;
       }
 
-      const enrollmentIds = enrollmentsResult.data.map((e: any) => e.id);
+      const enrollmentIds = enrollmentsResult.data.map((e: { id: string }) => e.id);
       if (enrollmentIds.length === 0) {
         setError('No active enrollments found in this class');
         return;
@@ -332,8 +332,9 @@ export default function AccountantDashboard() {
             </div>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-1">Amount</label>
+                <label htmlFor="payment-amount" className="block text-sm font-medium mb-1">Amount</label>
                 <input
+                  id="payment-amount"
                   type="number"
                   className="w-full p-2 border rounded"
                   value={paymentAmount}
@@ -342,8 +343,10 @@ export default function AccountantDashboard() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Payment Method</label>
+                <label htmlFor="payment-method" className="block text-sm font-medium mb-1">Payment Method</label>
                 <select
+                  id="payment-method"
+                  aria-label="Payment Method"
                   className="w-full p-2 border rounded"
                   value={paymentMethod}
                   onChange={(e) => setPaymentMethod(e.target.value)}
@@ -356,8 +359,9 @@ export default function AccountantDashboard() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Reference Number</label>
+                <label htmlFor="payment-reference" className="block text-sm font-medium mb-1">Reference Number</label>
                 <input
+                  id="payment-reference"
                   type="text"
                   className="w-full p-2 border rounded"
                   value={paymentReference}
@@ -392,8 +396,10 @@ export default function AccountantDashboard() {
             <h2 className="text-xl font-bold mb-4">Generate Invoices</h2>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-1">Class</label>
+                <label htmlFor="generate-class" className="block text-sm font-medium mb-1">Class</label>
                 <select
+                  id="generate-class"
+                  aria-label="Class"
                   className="w-full p-2 border rounded"
                   value={selectedClass}
                   onChange={(e) => setSelectedClass(e.target.value)}
@@ -407,8 +413,10 @@ export default function AccountantDashboard() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Term</label>
+                <label htmlFor="generate-term" className="block text-sm font-medium mb-1">Term</label>
                 <select
+                  id="generate-term"
+                  aria-label="Term"
                   className="w-full p-2 border rounded"
                   value={selectedTerm}
                   onChange={(e) => setSelectedTerm(e.target.value)}
@@ -422,8 +430,9 @@ export default function AccountantDashboard() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Amount</label>
+                <label htmlFor="generate-amount" className="block text-sm font-medium mb-1">Amount</label>
                 <input
+                  id="generate-amount"
                   type="number"
                   className="w-full p-2 border rounded"
                   value={invoiceAmount}
@@ -432,8 +441,9 @@ export default function AccountantDashboard() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Due Date (Optional)</label>
+                <label htmlFor="generate-due-date" className="block text-sm font-medium mb-1">Due Date (Optional)</label>
                 <input
+                  id="generate-due-date"
                   type="date"
                   className="w-full p-2 border rounded"
                   value={dueDate}

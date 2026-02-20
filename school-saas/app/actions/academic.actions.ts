@@ -2,6 +2,7 @@
 
 import { AcademicYearService } from '@/services/academicYear.service';
 import { TermService } from '@/services/term.service';
+import { prisma } from '@/lib/db';
 import {
   createAcademicYearSchema,
   updateAcademicYearSchema,
@@ -63,21 +64,52 @@ type TermWithRelations = Term & {
 // ============================================
 
 /**
- * Create a new academic year
+ * Create a new academic year with optional terms
  */
 export async function createAcademicYear(
-  input: CreateAcademicYearInput
+  input: CreateAcademicYearInput & { terms?: { name: string; startDate: Date; endDate: Date }[] }
 ): Promise<{ success: true; data: AcademicYear } | { success: false; error: string }> {
   try {
     const context = await getCurrentUser();
     if (!context) return { success: false, error: 'Unauthorized' };
 
-    const validation = createAcademicYearSchema.safeParse(input);
+    const { terms, ...academicYearData } = input;
+    const validation = createAcademicYearSchema.safeParse(academicYearData);
     if (!validation.success) {
       return { success: false, error: validation.error.issues.map(i => i.message).join(', ') };
     }
 
-    const academicYear = await AcademicYearService.createAcademicYear(validation.data, context);
+    const academicYear = await prisma.$transaction(async (tx) => {
+      // Create the academic year
+      const year = await tx.academicYear.create({
+        data: {
+          name: validation.data.name.trim(),
+          startDate: validation.data.startDate,
+          endDate: validation.data.endDate,
+          isCurrent: validation.data.isCurrent ?? false,
+          schoolId: context.schoolId!,
+          status: 'ACTIVE',
+        },
+      });
+
+      // Create terms if provided
+      if (terms && terms.length > 0) {
+        for (const term of terms) {
+          await tx.term.create({
+            data: {
+              name: term.name,
+              startDate: term.startDate,
+              endDate: term.endDate,
+              academicYearId: year.id,
+              schoolId: context.schoolId!,
+            },
+          });
+        }
+      }
+
+      return year;
+    });
+
     revalidatePath('/academics/years');
     return { success: true, data: academicYear };
   } catch (error) {
