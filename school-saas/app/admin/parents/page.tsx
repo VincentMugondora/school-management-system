@@ -5,6 +5,7 @@ import { Plus, Users, UserCog } from 'lucide-react';
 export default async function ParentsPage() {
   const parents = await prisma.parent.findMany({
     include: {
+      user: true,
       _count: {
         select: { students: true }
       }
@@ -48,13 +49,13 @@ export default async function ParentsPage() {
                       <UserCog className="w-5 h-5 text-green-600" />
                     </div>
                     <div>
-                      <p className="font-medium text-gray-800">{parent.firstName} {parent.lastName}</p>
-                      <p className="text-sm text-gray-500 capitalize">{parent.relationship.toLowerCase()}</p>
+                      <p className="font-medium text-gray-800">{parent.user.firstName} {parent.user.lastName}</p>
+                      <p className="text-sm text-gray-500">Parent/Guardian</p>
                     </div>
                   </Link>
                 </td>
                 <td className="px-6 py-4">
-                  <div className="text-sm text-gray-600">{parent.email}</div>
+                  <div className="text-sm text-gray-600">{parent.user.email}</div>
                   {parent.phone && <div className="text-sm text-gray-500">{parent.phone}</div>}
                 </td>
                 <td className="px-6 py-4">
@@ -63,7 +64,7 @@ export default async function ParentsPage() {
                   </span>
                 </td>
                 <td className="px-6 py-4 text-sm text-gray-600">
-                  {parent.occupation || 'N/A'}
+                  N/A
                 </td>
               </tr>
             ))}
