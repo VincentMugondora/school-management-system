@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createUserProfile, getAvailableSchools } from './actions';
-import { Role } from '@prisma/client';
+type Role = 'STUDENT' | 'TEACHER' | 'PARENT' | 'ADMIN' | 'SUPER_ADMIN' | 'ACCOUNTANT';
 
 interface School {
   id: string;
@@ -20,12 +20,12 @@ interface SetupFormProps {
 }
 
 const roleLabels: Record<Role, string> = {
-  [Role.STUDENT]: 'Student',
-  [Role.TEACHER]: 'Teacher',
-  [Role.PARENT]: 'Parent',
-  [Role.ADMIN]: 'School Administrator',
-  [Role.SUPER_ADMIN]: 'Super Administrator',
-  [Role.ACCOUNTANT]: 'Accountant',
+  STUDENT: 'Student',
+  TEACHER: 'Teacher',
+  PARENT: 'Parent',
+  ADMIN: 'School Administrator',
+  SUPER_ADMIN: 'Super Administrator',
+  ACCOUNTANT: 'Accountant',
 };
 
 export default function SetupForm({ 

@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Gender } from '@prisma/client';
 import { createStudent } from '@/app/actions/student.actions';
 import Link from 'next/link';
 import {

@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Role, UserStatus } from '@prisma/client';
+type Role = 'SUPER_ADMIN' | 'ADMIN' | 'TEACHER' | 'STUDENT' | 'PARENT' | 'ACCOUNTANT';
+type UserStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'SUSPENDED';
 
 interface ImpersonateButtonProps {
   userId: string;
@@ -23,7 +24,7 @@ export function ImpersonateButton({
   const [isLoading, setIsLoading] = useState(false);
 
   // Rules: Cannot impersonate SUPER_ADMIN, must be APPROVED
-  const canImpersonate = userRole !== Role.SUPER_ADMIN && userStatus === UserStatus.APPROVED;
+  const canImpersonate = userRole !== 'SUPER_ADMIN' && userStatus === 'APPROVED';
   const isDisabled = disabled || !canImpersonate || isLoading;
 
   const handleImpersonate = async () => {

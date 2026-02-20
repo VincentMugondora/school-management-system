@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Role } from '@prisma/client';
+import type { Role } from '@prisma/client';
 import { getResultsByStudent, calculateStudentOverallPerformance } from '@/app/actions/exam.actions';
 import { getCurrentUserProfile } from '@/app/actions/user.actions';
 
@@ -18,7 +18,7 @@ interface Result {
 
 export default function StudentResultsDashboard() {
   const [user, setUser] = useState<{ 
-    role: Role; 
+    role: string; 
     id: string;
     firstName: string | null; 
     lastName: string | null;
@@ -81,12 +81,10 @@ export default function StudentResultsDashboard() {
     }
   }
 
-  if (!user || user.role !== Role.STUDENT) {
+  if (!user || (user.role !== 'STUDENT' && user.role !== 'SUPER_ADMIN')) {
     return (
-      <div className="p-6">
-        <div className="text-center text-red-600">
-          Access Denied. Only students can access this dashboard.
-        </div>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center text-red-600">Access Denied</div>
       </div>
     );
   }

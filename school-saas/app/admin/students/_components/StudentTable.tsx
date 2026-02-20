@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Student, Gender, Prisma } from '@prisma/client';
+import type { Prisma } from '@prisma/client';
 import { Eye, Edit, Trash2, GraduationCap } from 'lucide-react';
 
 type StudentWithRelations = Prisma.StudentGetPayload<{

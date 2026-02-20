@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Role } from '@prisma/client';
+import type { Role } from '@prisma/client';
 import { listClasses } from '@/app/actions/teacher.actions';
 import { listTerms } from '@/app/actions/academic.actions';
 import { getAttendanceByClassAndDate, bulkUpdateAttendance } from '@/app/actions/exam.actions';
@@ -31,7 +31,7 @@ interface StudentAttendance {
 }
 
 export default function TeacherAttendanceDashboard() {
-  const [user, setUser] = useState<{ role: Role } | null>(null);
+  const [user, setUser] = useState<{ role: string } | null>(null);
   const [classes, setClasses] = useState<Class[]>([]);
   const [terms, setTerms] = useState<Term[]>([]);
   const [selectedClass, setSelectedClass] = useState<string>('');
@@ -170,12 +170,10 @@ export default function TeacherAttendanceDashboard() {
     setAttendance(prev => prev.map(a => ({ ...a, isPresent: false })));
   }
 
-  if (!user || (user.role !== Role.TEACHER && user.role !== Role.ADMIN)) {
+  if (!user || (user.role !== 'TEACHER' && user.role !== 'SUPER_ADMIN')) {
     return (
-      <div className="p-6">
-        <div className="text-center text-red-600">
-          Access Denied. Only teachers and administrators can access this dashboard.
-        </div>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center text-red-600">Access Denied</div>
       </div>
     );
   }

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Role } from '@prisma/client';
+import type { Role } from '@prisma/client';
 import { getTeacherDashboard } from '@/app/actions/teacher.actions';
 import { listClasses } from '@/app/actions/teacher.actions';
 import { listTerms } from '@/app/actions/academic.actions';
@@ -47,7 +47,7 @@ const mockSchedule: ScheduleItem[] = [
 const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
 export default function TeacherScheduleDashboard() {
-  const [user, setUser] = useState<{ role: Role; firstName: string | null; lastName: string | null } | null>(null);
+  const [user, setUser] = useState<{ role: string; firstName: string | null; lastName: string | null } | null>(null);
   const [assignedClasses, setAssignedClasses] = useState<Class[]>([]);
   const [assignedSubjects, setAssignedSubjects] = useState<Subject[]>([]);
   const [selectedDay, setSelectedDay] = useState<string>('Monday');
@@ -103,12 +103,10 @@ export default function TeacherScheduleDashboard() {
 
   const scheduleForDay = mockSchedule.filter(item => item.day === selectedDay);
 
-  if (!user || user.role !== Role.TEACHER) {
+  if (!user || (user.role !== 'TEACHER' && user.role !== 'SUPER_ADMIN')) {
     return (
-      <div className="p-6">
-        <div className="text-center text-red-600">
-          Access Denied. Only teachers can access this dashboard.
-        </div>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center text-red-600">Access Denied</div>
       </div>
     );
   }

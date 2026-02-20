@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Gender } from '@prisma/client';
+import type { Gender } from '@prisma/client';
 import { Filter, X } from 'lucide-react';
 
 interface Class {
