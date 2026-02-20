@@ -1,10 +1,11 @@
 'use server';
 
 import { StudentService } from '@/services/student.service';
-import { getCurrentUser } from '@/lib/auth';
 import { GuardianRelationship } from '@/types/student.domain';
 import { Gender } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
+import { auth } from '@clerk/nextjs/server';
+import { prisma } from '@/lib/db';
 
 interface CreateStudentInput {
   firstName: string;
@@ -23,6 +24,23 @@ interface CreateStudentInput {
     phone?: string;
     relationship: GuardianRelationship;
   }>;
+}
+
+async function getCurrentUser() {
+  const { userId: clerkId } = await auth();
+  if (!clerkId) return null;
+
+  const user = await prisma.user.findUnique({
+    where: { clerkId },
+    select: {
+      id: true,
+      schoolId: true,
+      role: true,
+    },
+  });
+
+  if (!user) return null;
+  return user;
 }
 
 export async function createStudentAction(input: CreateStudentInput) {
