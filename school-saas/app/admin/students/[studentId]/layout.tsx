@@ -6,7 +6,7 @@ import { ArrowLeft, User, BookOpen, Calendar, FileText, DollarSign, Users } from
 
 interface StudentLayoutProps {
   children: React.ReactNode;
-  params: { studentId: string };
+  params: Promise<{ studentId: string }>;
 }
 
 const tabs = [
@@ -18,9 +18,10 @@ const tabs = [
   { name: 'Guardians', href: '/guardians', icon: Users },
 ];
 
-export default function StudentLayout({ children, params }: StudentLayoutProps) {
+export default async function StudentLayout({ children, params }: StudentLayoutProps) {
   const pathname = usePathname();
-  const basePath = `/admin/students/${params.studentId}`;
+  const { studentId } = await params;
+  const basePath = `/admin/students/${studentId}`;
 
   return (
     <div className="p-8">
