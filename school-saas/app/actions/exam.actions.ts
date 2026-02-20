@@ -129,6 +129,7 @@ export async function createExam(
         data: {
           name: 'Term 1',
           academicYearId: classRecord.academicYearId,
+          schoolId: context.schoolId,
           startDate: new Date(),
           endDate: new Date(new Date().setMonth(new Date().getMonth() + 3)),
         },
