@@ -556,6 +556,29 @@ export async function createExam(
     const context = await getCurrentUser();
     if (!context || !context.schoolId) return { success: false, error: 'Unauthorized' };
 
+    // Get class info for academicYearId
+    const classRecord = await prisma.class.findUnique({
+      where: { id: input.classId },
+      select: { academicYearId: true },
+    });
+    if (!classRecord) return { success: false, error: 'Class not found' };
+
+    // Get or create term
+    let term = await prisma.term.findFirst({
+      where: { academicYearId: classRecord.academicYearId },
+    });
+    if (!term) {
+      term = await prisma.term.create({
+        data: {
+          name: 'Term 1',
+          academicYearId: classRecord.academicYearId,
+          schoolId: context.schoolId,
+          startDate: new Date(),
+          endDate: new Date(new Date().setMonth(new Date().getMonth() + 3)),
+        },
+      });
+    }
+
     // Create exam record
     const exam = await prisma.exam.create({
       data: {
@@ -564,6 +587,9 @@ export async function createExam(
         classId: input.classId,
         examDate: input.date,
         maxMarks: input.maxMarks,
+        schoolId: context.schoolId,
+        academicYearId: classRecord.academicYearId,
+        termId: term.id,
       },
     });
 
