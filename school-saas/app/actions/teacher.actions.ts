@@ -562,7 +562,7 @@ export async function createExam(
         name: input.name,
         subjectId: input.subjectId,
         classId: input.classId,
-        date: input.date,
+        examDate: input.date,
         totalMarks: input.totalMarks,
       },
     });
