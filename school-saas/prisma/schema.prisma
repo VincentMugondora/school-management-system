@@ -595,7 +595,7 @@ model ImpersonationAuditLog {
   userAgent         String?
   
   // Relations
-  admin             User      @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  admin             User      @relation("AuditLogAdmin", fields: [adminId], references: [id], onDelete: Cascade)
   
   @@index([adminId])
   @@index([sessionId])

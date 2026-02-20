@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
-import { startImpersonation } from '@/lib/auth/impersonation';
+import { startImpersonation } from '@/src/lib/auth/impersonation';
 
 export async function POST(request: NextRequest) {
   try {

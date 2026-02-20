@@ -3,7 +3,7 @@ import { Role, UserStatus } from '@prisma/client';
 import { auth } from '@clerk/nextjs/server';
 import { redirect } from 'next/navigation';
 import { Building2, Mail, Calendar, UserCircle, Eye } from 'lucide-react';
-import { ImpersonateButton } from '@/components/impersonation/ImpersonateButton';
+import { ImpersonateButton } from '@/src/components/impersonation/ImpersonateButton';
 
 export default async function SuperAdminUsersPage() {
   const { userId: clerkId } = await auth();
