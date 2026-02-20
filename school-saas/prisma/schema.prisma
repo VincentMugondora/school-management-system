@@ -133,6 +133,7 @@ model User {
   approvalAuditsAsApprover ApprovalAuditLog[] @relation("ApprovalApprover")
   impersonationSessionsAsAdmin   ImpersonationSession[] @relation("ImpersonationAdmin")
   impersonationSessionsAsTarget  ImpersonationSession[] @relation("ImpersonationTarget")
+  impersonationAuditLogs         ImpersonationAuditLog[] @relation("AuditLogAdmin")
 
   @@index([schoolId])
   @@index([clerkId])
