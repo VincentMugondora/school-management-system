@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Role, InvoiceStatus } from '@prisma/client';
+import type { Role } from '@prisma/client';
+import { InvoiceStatus } from '@prisma/client';
 import { listInvoices, getFinancialSummary, applyPayment, updateInvoiceStatus, generateInvoices } from '@/app/actions/finance.actions';
 import { listEnrollmentsByClass } from '@/app/actions/student.actions';
 import { listClasses } from '@/app/actions/teacher.actions';
@@ -30,7 +31,7 @@ interface Invoice {
 }
 
 export default function AccountantDashboard() {
-  const [user, setUser] = useState<{ role: Role } | null>(null);
+  const [user, setUser] = useState<{ role: string } | null>(null);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [summary, setSummary] = useState<{
     totalInvoiced: number;
@@ -206,7 +207,7 @@ export default function AccountantDashboard() {
     }
   };
 
-  if (!user || (user.role !== Role.ACCOUNTANT && user.role !== Role.ADMIN && user.role !== Role.SUPER_ADMIN)) {
+  if (!user || (user.role !== 'ACCOUNTANT' && user.role !== 'ADMIN' && user.role !== 'SUPER_ADMIN')) {
     return (
       <div className="p-6">
         <div className="text-center text-red-600">
