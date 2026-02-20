@@ -53,7 +53,7 @@ export default async function AuditPage() {
                   </div>
                 </td>
                 <td className="px-6 py-4 text-sm text-gray-600">
-                  {log.entityType}
+                  {log.entity}
                   {log.entityId && <span className="text-gray-400 ml-1">({log.entityId.slice(-6)})</span>}
                 </td>
                 <td className="px-6 py-4 text-sm text-gray-500">

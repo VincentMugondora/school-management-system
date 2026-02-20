@@ -85,7 +85,7 @@ export default async function FinancePage() {
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
                       <FileText className="w-4 h-4 text-gray-400" />
-                      <span className="font-medium text-gray-800">#{invoice.invoiceNumber}</span>
+                      <span className="font-medium text-gray-800">#{invoice.id.slice(-6)}</span>
                     </div>
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-600">${invoice.amount}</td>
