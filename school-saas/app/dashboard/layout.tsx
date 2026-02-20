@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation';
 import { currentUser } from '@clerk/nextjs/server';
 import { prisma } from '@/lib/db';
 import { Role } from '@prisma/client';
-import { GlobalImpersonationProvider } from '@/components/impersonation/GlobalImpersonationProvider';
+import { GlobalImpersonationProvider } from '@/src/components/impersonation/GlobalImpersonationProvider';
 
 /**
  * Dashboard Root Layout
