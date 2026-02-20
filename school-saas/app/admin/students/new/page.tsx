@@ -10,7 +10,7 @@ import { ArrowLeft, Plus, Loader2 } from 'lucide-react';
 import { FormInput } from '@/components/form/FormInput';
 import { FormSelect } from '@/components/form/FormSelect';
 import { FormTextarea } from '@/components/form/FormTextarea';
-import { createStudent } from '@/app/actions/student.actions';
+import { createStudentAction as createStudent } from './_actions/createStudentAction';
 
 const createStudentSchema = z.object({
   firstName: z.string().min(1, 'First name is required'),
@@ -72,7 +72,7 @@ export default function NewStudentPage({ classes, academicYears }: NewStudentPag
         firstName: data.firstName,
         lastName: data.lastName,
         dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth) : undefined,
-        gender: data.gender || undefined,
+        gender: data.gender as 'MALE' | 'FEMALE' | 'OTHER' | undefined,
         email: data.email || undefined,
         phone: data.phone || undefined,
         address: data.address || undefined,
