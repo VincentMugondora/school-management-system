@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Role } from '@prisma/client';
+import type { Role } from '@prisma/client';
 import {
   listTeachers,
   assignTeacherToClass,
@@ -40,7 +40,7 @@ interface Subject {
 }
 
 export default function TeacherAssignmentDashboard() {
-  const [user, setUser] = useState<{ role: Role } | null>(null);
+  const [user, setUser] = useState<{ role: string } | null>(null);
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [classes, setClasses] = useState<Class[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
@@ -154,8 +154,12 @@ export default function TeacherAssignmentDashboard() {
     setLoading(false);
   }
 
-  if (!user || (user.role !== Role.ADMIN && user.role !== Role.SUPER_ADMIN)) {
-    return <div>Access Denied. Only administrators can access this dashboard.</div>;
+  if (!user || (user.role !== 'ADMIN' && user.role !== 'SUPER_ADMIN')) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center text-red-600">Access Denied</div>
+      </div>
+    );
   }
 
   const selectedTeacherData = teachers.find(t => t.id === selectedTeacher);

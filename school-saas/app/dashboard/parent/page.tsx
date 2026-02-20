@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Role } from '@prisma/client';
+import type { Role } from '@prisma/client';
 import { getResultsByStudent, calculateStudentOverallPerformance } from '@/app/actions/exam.actions';
 import { getAttendanceByStudentAndTerm } from '@/app/actions/exam.actions';
 import { listTerms } from '@/app/actions/academic.actions';
@@ -48,7 +48,7 @@ const mockChildren: Child[] = [
 ];
 
 export default function ParentDashboard() {
-  const [user, setUser] = useState<{ role: Role; firstName: string | null; lastName: string | null } | null>(null);
+  const [user, setUser] = useState<{ role: string; firstName: string | null; lastName: string | null } | null>(null);
   const [children, setChildren] = useState<ChildData[]>([]);
   const [selectedChild, setSelectedChild] = useState<string>(mockChildren[0]?.id || '');
   const [loading, setLoading] = useState(true);
@@ -100,12 +100,10 @@ export default function ParentDashboard() {
 
   const selectedChildData = children.find(c => c.info.id === selectedChild);
 
-  if (!user || user.role !== Role.PARENT) {
+  if (!user || (user.role !== 'PARENT' && user.role !== 'SUPER_ADMIN')) {
     return (
-      <div className="p-6">
-        <div className="text-center text-red-600">
-          Access Denied. Only parents can access this dashboard.
-        </div>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center text-red-600">Access Denied</div>
       </div>
     );
   }

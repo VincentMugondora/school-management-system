@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Role } from '@prisma/client';
+import type { Role } from '@prisma/client';
 import { getResultsByStudent, calculateStudentOverallPerformance } from '@/app/actions/exam.actions';
 import { getAttendanceByStudentAndTerm } from '@/app/actions/exam.actions';
 import { listTerms } from '@/app/actions/academic.actions';
@@ -56,7 +56,7 @@ const mockStudentSchedule = [
 const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
 export default function StudentDashboard() {
-  const [user, setUser] = useState<{ role: Role; firstName: string | null; lastName: string | null; id: string } | null>(null);
+  const [user, setUser] = useState<{ role: string; firstName: string | null; lastName: string | null; id: string } | null>(null);
   const [results, setResults] = useState<Result[]>([]);
   const [performance, setPerformance] = useState<{
     totalExams: number;
@@ -118,12 +118,10 @@ export default function StudentDashboard() {
 
   const scheduleForDay = mockStudentSchedule.filter(item => item.day === selectedDay);
 
-  if (!user || user.role !== Role.STUDENT) {
+  if (!user || (user.role !== 'STUDENT' && user.role !== 'SUPER_ADMIN')) {
     return (
-      <div className="p-6">
-        <div className="text-center text-red-600">
-          Access Denied. Only students can access this dashboard.
-        </div>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center text-red-600">Access Denied</div>
       </div>
     );
   }
