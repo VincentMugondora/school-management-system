@@ -544,3 +544,32 @@ export async function deleteSubject(
     return handleServiceError(error);
   }
 }
+
+// ============================================
+// EXAM SERVER ACTIONS
+// ============================================
+
+export async function createExam(
+  input: { name: string; subjectId: string; classId: string; date: Date; totalMarks: number }
+): Promise<{ success: true; data: { id: string } } | { success: false; error: string }> {
+  try {
+    const context = await getCurrentUser();
+    if (!context || !context.schoolId) return { success: false, error: 'Unauthorized' };
+
+    // Create exam record
+    const exam = await prisma.exam.create({
+      data: {
+        name: input.name,
+        subjectId: input.subjectId,
+        classId: input.classId,
+        date: input.date,
+        totalMarks: input.totalMarks,
+      },
+    });
+
+    revalidatePath('/exams');
+    return { success: true, data: { id: exam.id } };
+  } catch (error) {
+    return handleServiceError(error);
+  }
+}
