@@ -80,7 +80,7 @@ export async function createExam(
     });
     if (!subject) {
       subject = await prisma.subject.create({
-        data: { name: input.subject },
+        data: { name: input.subject, schoolId: context.schoolId },
       });
     }
 
