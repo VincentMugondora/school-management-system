@@ -71,7 +71,7 @@ export default function NewStudentPage({ classes, academicYears }: NewStudentPag
       const result = await createStudent({
         firstName: data.firstName,
         lastName: data.lastName,
-        dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth) : undefined,
+        dateOfBirth: data.dateOfBirth || undefined,
         gender: data.gender as 'MALE' | 'FEMALE' | 'OTHER' | undefined,
         email: data.email || undefined,
         phone: data.phone || undefined,
