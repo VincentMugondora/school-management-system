@@ -550,7 +550,7 @@ export async function deleteSubject(
 // ============================================
 
 export async function createExam(
-  input: { name: string; subjectId: string; classId: string; date: Date; totalMarks: number }
+  input: { name: string; subjectId: string; classId: string; date: Date; maxMarks: number }
 ): Promise<{ success: true; data: { id: string } } | { success: false; error: string }> {
   try {
     const context = await getCurrentUser();
@@ -563,7 +563,7 @@ export async function createExam(
         subjectId: input.subjectId,
         classId: input.classId,
         examDate: input.date,
-        totalMarks: input.totalMarks,
+        maxMarks: input.maxMarks,
       },
     });
 
