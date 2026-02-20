@@ -247,7 +247,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       firstName: row.firstName,
       lastName: row.lastName,
       dateOfBirth: row.dateOfBirth,
-      gender: row.gender === 'M' ? 'MALE' : 'FEMALE',
+      gender: (row.gender === 'M' ? 'MALE' : 'FEMALE') as 'MALE' | 'FEMALE',
       className: row.className,
       parentEmail: row.parentEmail,
       parentPhone: row.parentPhone,
@@ -266,24 +266,21 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     // Step 9: Return success/failure report
     console.log('[Import Commit] Result:', {
       schoolId: admin.schoolId,
-      successCount: importResult.successCount,
-      failureCount: importResult.failureCount,
+      successCount: importResult.imported,
+      failureCount: importResult.failed,
       totalRows: importResult.totalRows,
     });
 
     return NextResponse.json({
-      success: importResult.successCount > 0,
-      imported: importResult.successCount > 0,
+      success: importResult.imported > 0,
+      imported: importResult.imported > 0,
       summary: {
         totalRows: importResult.totalRows,
-        successCount: importResult.successCount,
-        failureCount: importResult.failureCount,
-        durationMs: importResult.durationMs,
+        successCount: importResult.imported,
+        failureCount: importResult.failed,
+        durationMs: importResult.endTime.getTime() - importResult.startTime.getTime(),
       },
       errors: importResult.errors,
-      successfulRowNumbers: importResult.successfulRowNumbers,
-      failedRowNumbers: importResult.failedRowNumbers,
-      completedAt: importResult.completedAt.toISOString(),
     });
   } catch (error) {
     console.error('Student import commit error:', error);

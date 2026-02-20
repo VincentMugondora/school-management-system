@@ -34,28 +34,28 @@ export interface StudentImportRow {
   lastName: string;
 
   /** Date of birth in ISO 8601 format (YYYY-MM-DD) */
-  dateOfBirth?: string;
+  dateOfBirth: string;
 
   /** Student gender */
-  gender?: 'MALE' | 'FEMALE' | 'OTHER';
+  gender: 'MALE' | 'FEMALE' | 'OTHER';
 
   /** Class/grade name the student should be enrolled in */
   className: string;
 
   /** Parent or guardian email address */
-  parentEmail?: string;
+  parentEmail: string;
 
   /** Parent or guardian phone number */
-  parentPhone?: string;
+  parentPhone: string;
 
   /** Parent or guardian full name */
-  parentName?: string;
+  parentName: string;
 
   /** Physical address */
-  address?: string;
+  address: string;
 
   /** Academic year for enrollment (e.g., "2024-2025") */
-  academicYear?: string;
+  academicYear: string;
 }
 
 /**
