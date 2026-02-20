@@ -3,8 +3,8 @@ import { Users, Mail, Phone, User, Shield } from 'lucide-react';
 interface Guardian {
   id: string;
   user: {
-    firstName: string;
-    lastName: string;
+    firstName: string | null;
+    lastName: string | null;
     email: string;
   };
   phone?: string | null;
@@ -40,8 +40,8 @@ export function GuardiansTab({ guardians }: GuardiansTabProps) {
               <div className="flex items-start gap-4">
                 <div className="w-14 h-14 bg-purple-100 rounded-full flex items-center justify-center shrink-0">
                   <span className="text-xl font-bold text-purple-600">
-                    {guardian.user.firstName[0]}
-                    {guardian.user.lastName[0]}
+                    {(guardian.user.firstName?.[0] || '?')}
+                    {(guardian.user.lastName?.[0] || '?')}
                   </span>
                 </div>
                 <div className="flex-1">

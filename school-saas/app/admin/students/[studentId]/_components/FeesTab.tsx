@@ -3,7 +3,7 @@ import { DollarSign, CreditCard, CheckCircle, Clock, AlertCircle } from 'lucide-
 interface Payment {
   id: string;
   amount: number;
-  method: string;
+  method: string | null;
   paymentDate: Date;
 }
 
@@ -11,7 +11,7 @@ interface Invoice {
   id: string;
   amount: number;
   status: string;
-  dueDate: Date;
+  dueDate: Date | null;
   term: { name: string; academicYear: { name: string } };
   payments: Payment[];
 }
@@ -126,7 +126,7 @@ export function FeesTab({ invoices }: FeesTabProps) {
                         {invoice.term.academicYear.name} - {invoice.term.name}
                       </h4>
                       <p className="text-sm text-gray-500">
-                        Due: {new Date(invoice.dueDate).toLocaleDateString()}
+                        Due: {invoice.dueDate ? new Date(invoice.dueDate).toLocaleDateString() : 'N/A'}
                       </p>
                     </div>
                   </div>
