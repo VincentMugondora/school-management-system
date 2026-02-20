@@ -68,7 +68,7 @@ function handleServiceError(error: unknown): { success: false; error: string } {
 }
 
 // Type definitions for return data
-type StudentParent = { id: string; user: { firstName: string; lastName: string } };
+type StudentParent = { id: string; user: { firstName: string | null; lastName: string | null } };
 type StudentEnrollment = { id: string; status: string; academicYear: { name: string }; class: { name: string } };
 type StudentCount = { enrollments: number; results: number; attendances: number };
 type StudentWithRelations = Student & {
