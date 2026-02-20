@@ -10,11 +10,11 @@ import { getAdminContext, handleApiError } from '../_lib/auth';
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const context = await getAdminContext();
-    const { id } = params;
+    const { id } = await params;
 
     const student = await StudentService.getStudentById(
       id,
@@ -33,11 +33,11 @@ export async function GET(
  */
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const context = await getAdminContext();
-    const { id } = params;
+    const { id } = await params;
     const body = await request.json();
 
     // Validate input
@@ -91,11 +91,11 @@ export async function PATCH(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const context = await getAdminContext();
-    const { id } = params;
+    const { id } = await params;
 
     await StudentService.deleteStudent(id, context);
 
