@@ -119,7 +119,7 @@ export default async function FinancePage() {
                     </div>
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-600">
-                    {payment.paymentMethod}
+                    {payment.method}
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-500">
                     {new Date(payment.paymentDate).toLocaleDateString()}
