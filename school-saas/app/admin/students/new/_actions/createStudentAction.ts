@@ -1,6 +1,6 @@
 'use server';
 
-import { StudentService } from '@/services/student.service';
+import { StudentService } from '@/src/services/student.service';
 import { GuardianRelationship } from '@/types/student.domain';
 import { Gender } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
